@@ -3,7 +3,7 @@ package com.uade.cookitbackend.service.impl;
 import com.uade.cookitbackend.dto.CreateUsuarioDTO;
 import com.uade.cookitbackend.entity.Usuario;
 import com.uade.cookitbackend.exception.DuplicateResourceException;
-import com.uade.cookitbackend.repository.UsuarioRepository;
+import com.uade.cookitbackend.repository.db.UsuarioRepository;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import lombok.RequiredArgsConstructor;

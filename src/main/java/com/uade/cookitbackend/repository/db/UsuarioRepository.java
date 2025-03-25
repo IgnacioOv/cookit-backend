@@ -1,4 +1,4 @@
-package com.uade.cookitbackend.repository;
+package com.uade.cookitbackend.repository.db;
 
 import com.uade.cookitbackend.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
