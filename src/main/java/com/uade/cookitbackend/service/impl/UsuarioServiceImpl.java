@@ -6,6 +6,7 @@ import com.uade.cookitbackend.exception.DuplicateResourceException;
 import com.uade.cookitbackend.repository.db.UsuarioRepository;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -28,4 +29,12 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new DuplicateResourceException("Email already exists: " + createUsuarioDTO.getMail());
         }
     }
+
+    @Override
+    public Usuario getUsuarioById(Integer id) {
+        return usuarioRepository.findById(id).orElseThrow(
+                () -> new EntityNotFoundException("Usuario not found with id: " + id));
+    }
+
+
 }

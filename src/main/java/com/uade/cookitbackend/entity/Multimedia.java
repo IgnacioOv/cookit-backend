@@ -9,16 +9,15 @@ import lombok.Data;
 public class Multimedia {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idContenido")
+    @Column(name = "id_contenido")
     private Integer idContenido;
 
     @ManyToOne
-    @JoinColumn(name = "idPaso", nullable = false)
+    @JoinColumn(name = "id_paso", nullable = false)
     private Paso paso;
 
     @Column(length = 10)
-    @Enumerated(EnumType.STRING)
-    private TipoContenido tipoContenido;
+    private String tipoContenido;
 
     @Column(length = 5)
     private String extension;
@@ -26,7 +25,3 @@ public class Multimedia {
     @Column(length = 300)
     private String urlContenido;
 }
-
-enum TipoContenido {
-    foto, video, audio
-} 

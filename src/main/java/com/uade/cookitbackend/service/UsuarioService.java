@@ -5,4 +5,5 @@ import com.uade.cookitbackend.entity.Usuario;
 
 public interface UsuarioService {
     Usuario createUsuario(CreateUsuarioDTO createUsuarioDTO);
+    Usuario getUsuarioById(Integer id);
 } 
