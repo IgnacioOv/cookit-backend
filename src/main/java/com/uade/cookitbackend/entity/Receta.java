@@ -10,11 +10,11 @@ import java.util.List;
 public class Receta {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idReceta")
+    @Column(name = "id_receta")
     private Integer idReceta;
 
     @ManyToOne
-    @JoinColumn(name = "idUsuario")
+    @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
     @Column(length = 500)
