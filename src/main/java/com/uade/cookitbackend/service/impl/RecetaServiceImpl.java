@@ -12,6 +12,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class RecetaServiceImpl implements RecetaService {
@@ -47,5 +51,13 @@ public class RecetaServiceImpl implements RecetaService {
         val savedReceta =  recetaRepository.save(receta);
         return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
 
+    }
+
+    @Override
+    public List<RecetaResponseDTO> getRecetasByNombre(String nombreReceta) {
+        List<Receta> recetas = recetaRepository.findByNombreRecetaContainingIgnoreCaseOrderByIdRecetaDesc(nombreReceta);
+        return recetas.stream()
+                .map(recetaMapper::recetaToRecetaResponseDTO)
+                .collect(Collectors.toList());
     }
 }
