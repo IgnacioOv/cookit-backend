@@ -10,13 +10,13 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(uses = {PasoMapper.class, IngredienteMapper.class})
+
 public interface RecetaMapper {
 
     RecetaMapper INSTANCE = Mappers.getMapper(RecetaMapper.class);
 
     Receta toEntity(CreateRecetaDTO createRecetaDTO);
-    Paso toEntity(PasoDto pasoDto);
 
     @Mapping(source = "receta.usuario.nickname", target = "usuarioNickname")
     @Mapping(source = "receta.tipoReceta.descripcion", target = "tipoRecetaDescripcion")

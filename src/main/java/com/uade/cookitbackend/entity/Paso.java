@@ -17,7 +17,8 @@ public class Paso {
     @JoinColumn(name = "id_receta")
     private Receta receta;
 
-    private Integer nroPaso;
+    @Column(name = "nro_paso")
+    private Integer numeroPaso;
 
     @Column(length = 4000)
     private String texto;

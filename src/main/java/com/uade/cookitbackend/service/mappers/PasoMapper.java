@@ -11,4 +11,7 @@ public interface PasoMapper {
     PasoMapper INSTANCE = Mappers.getMapper(PasoMapper.class);
     @Mapping(target = "receta.idReceta", source = "idReceta")
     Paso toEntity(PasoDto createPasoDTO);
+    @Mapping(target = "idReceta", source = "receta.idReceta")
+    PasoDto toDto(Paso paso);
+
 }

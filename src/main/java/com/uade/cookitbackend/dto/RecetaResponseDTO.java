@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -16,4 +18,5 @@ public class RecetaResponseDTO {
     private int cantidadPersonas;
     private String tipoRecetaDescripcion;
     private String usuarioNickname;
+    private List<PasoDto> pasos;
 }
