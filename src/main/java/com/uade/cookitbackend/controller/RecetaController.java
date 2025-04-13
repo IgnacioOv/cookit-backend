@@ -18,6 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/recetas")
 @RequiredArgsConstructor
@@ -47,4 +49,19 @@ public class RecetaController {
         RecetaResponseDTO createdReceta = recetaService.createReceta(createRecetaDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReceta);
     }
+
+    @Operation(summary = "Get recetas by name")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No recetas found")
+    })
+    @GetMapping("/search")
+    public ResponseEntity<List<RecetaResponseDTO>> getRecetasByNombre(@RequestParam String nombre) {
+        List<RecetaResponseDTO> recetas = recetaService.getRecetasByNombre(nombre);
+        if (recetas.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(recetas);
+    }
+
 }
