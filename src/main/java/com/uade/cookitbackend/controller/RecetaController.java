@@ -44,7 +44,7 @@ public class RecetaController {
             required = true,
             schema = @Schema(implementation = CreateRecetaDTO.class)
     )
-                                               @Valid @RequestBody CreateRecetaDTO createRecetaDTO
+                                                          @Valid @RequestBody CreateRecetaDTO createRecetaDTO
     ) {
         RecetaResponseDTO createdReceta = recetaService.createReceta(createRecetaDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReceta);
@@ -64,4 +64,49 @@ public class RecetaController {
         return ResponseEntity.ok(recetas);
     }
 
+    @GetMapping("/{usuario}")
+    @Operation(summary = "Get recetas by user ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No recetas found for the user")
+    })
+    public ResponseEntity<List<RecetaResponseDTO>> getRecetasByUsuario(@PathVariable Integer usuario) {
+        List<RecetaResponseDTO> recetas = recetaService.getRecetaByIdUsuario(usuario);
+        if (recetas.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(recetas);
+    }
+
+    @Operation(summary = "Get recetas that do not contain a specific ingredient")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No recetas found")
+    })
+    @GetMapping("/exclude-ingredient")
+    public ResponseEntity<List<RecetaResponseDTO>> getRecetasWithoutIngrediente(
+            @RequestParam String ingrediente,
+            @RequestParam(defaultValue = "nombre") String orden) {
+        List<RecetaResponseDTO> recetas = recetaService.getRecetasWithoutIngrediente(ingrediente, orden);
+        if (recetas.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(recetas);
+    }
+
+    @Operation(summary = "Get recetas that contain a specific ingredient")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No recetas found")
+    })
+    @GetMapping("/include-ingredient")
+    public ResponseEntity<List<RecetaResponseDTO>> getRecetasWithIngrediente(
+            @RequestParam String ingrediente,
+            @RequestParam(defaultValue = "nombre") String orden) {
+        List<RecetaResponseDTO> recetas = recetaService.getRecetasWithIngrediente(ingrediente, orden);
+        if (recetas.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(recetas);
+    }
 }

@@ -60,4 +60,19 @@ public class RecetaServiceImpl implements RecetaService {
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<RecetaResponseDTO> getRecetaByIdUsuario(Integer userId) {
+        return List.of();
+    }
+
+    @Override
+    public List<RecetaResponseDTO> getRecetasWithoutIngrediente(String ingrediente, String orden) {
+        return List.of();
+    }
+
+    @Override
+    public List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden) {
+        return List.of();
+    }
 }

@@ -9,4 +9,7 @@ import java.util.List;
 public interface RecetaService {
     RecetaResponseDTO createReceta(CreateRecetaDTO createRecetaDTO);
     List<RecetaResponseDTO> getRecetasByNombre(String nombreReceta);
+    List<RecetaResponseDTO> getRecetaByIdUsuario(Integer userId);
+    List<RecetaResponseDTO> getRecetasWithoutIngrediente(String ingrediente, String orden);
+    List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden);
 }
