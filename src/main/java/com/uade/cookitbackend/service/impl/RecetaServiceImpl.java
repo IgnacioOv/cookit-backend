@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,5 +76,11 @@ public class RecetaServiceImpl implements RecetaService {
     @Override
     public List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden) {
         return List.of();
+    }
+
+    @Override
+    public RecetaResponseDTO getRecetaById(UUID id) {
+        Optional<Receta> recetaOpt = recetaRepository.findById(id);
+        return recetaOpt.map(recetaMapper::recetaToRecetaResponseDTO).orElse(null);
     }
 }
