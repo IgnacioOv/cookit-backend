@@ -31,6 +31,7 @@ public class RecetaController {
 
     private final RecetaService recetaService;
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Upload a new receta")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Receta created",
@@ -146,7 +147,7 @@ public class RecetaController {
     }
 
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Get feed by user token")
+    @Operation(summary = "Get result for search")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "get all feed by user"),
             @ApiResponse(responseCode = "404", description = "not feed found")
@@ -186,7 +187,7 @@ public class RecetaController {
         return ResponseEntity.ok(mockedList);
     }
 
-    @Operation(summary = "Get receta by id")
+    @Operation(summary = "Get detail of receta by id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Receta retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "Receta not found")
@@ -200,6 +201,7 @@ public class RecetaController {
         return ResponseEntity.ok(receta);
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Get recent viewed recetas by id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Receta retrieved successfully"),
@@ -213,6 +215,7 @@ public class RecetaController {
         return ResponseEntity.ok(mockedList);
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Get steps from receta by id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Steps receta retrieved successfully"),

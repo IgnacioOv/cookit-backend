@@ -100,6 +100,29 @@ public class CursosController {
         return ResponseEntity.ok(List.of(curso));
     }
 
+    // Ver todos los cursos (público)
+    @Operation(summary = "Ver todos los cursos", description = "Obtiene la lista de todos los cursos disponibles (mock)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Listado de cursos disponibles")
+    })
+    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<CursoResponse>> getAllCursos() {
+        // Simular varios cursos para la respuesta mock
+        CursoResponse curso1 = new CursoResponse();
+        curso1.setId(1);
+        curso1.setNombreCurso("Cocina italiana");
+
+        CursoResponse curso2 = new CursoResponse();
+        curso2.setId(2);
+        curso2.setNombreCurso("Repostería básica");
+
+        CursoResponse curso3 = new CursoResponse();
+        curso3.setId(3);
+        curso3.setNombreCurso("Parrilla argentina");
+
+        return ResponseEntity.ok(List.of(curso1, curso2, curso3));
+    }
+
     // Pagar un curso
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Pagar un curso", description = "Realiza el pago de un curso de forma mockeada")
