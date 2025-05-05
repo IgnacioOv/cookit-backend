@@ -2,6 +2,7 @@ package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.entity.TipoReceta;
 import com.uade.cookitbackend.service.TipoRecetaService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +17,14 @@ public class TipoRecetaController {
 
     private final TipoRecetaService tipoRecetaService;
 
+    @Hidden
     @GetMapping
     public ResponseEntity<List<TipoReceta>> getAllTiposReceta() {
         List<TipoReceta> tiposReceta = tipoRecetaService.getAllTiposReceta();
         return ResponseEntity.ok(tiposReceta);
     }
 
+    @Hidden
     @GetMapping("/{idTipo}")
     public ResponseEntity<TipoReceta> getTipoRecetaById(@PathVariable Integer idTipo) {
         TipoReceta tipoReceta = tipoRecetaService.getTipoRecetaById(idTipo);
@@ -31,6 +34,7 @@ public class TipoRecetaController {
         return ResponseEntity.ok(tipoReceta);
     }
 
+    @Hidden
     @PostMapping
     public ResponseEntity<TipoReceta> createTipoReceta(@RequestBody TipoReceta tipoReceta) {
         TipoReceta createdTipoReceta = tipoRecetaService.createTipoReceta(tipoReceta);

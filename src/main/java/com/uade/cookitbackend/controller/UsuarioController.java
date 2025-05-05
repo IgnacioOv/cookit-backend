@@ -6,15 +6,12 @@ import com.uade.cookitbackend.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,14 +48,14 @@ public class UsuarioController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Usuario> login(
+    public ResponseEntity<UserSessionResponse> login(
         @Valid @RequestBody(
             description = "User login data",
             required = true,
             content = @Content(schema = @Schema(implementation = UserLogin.class))
-        ) UserLogin createUsuarioDTO
+        ) UserLogin usuarioLogin
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(new UserSessionResponse());
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -80,7 +77,7 @@ public class UsuarioController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Usuario> resetPassword(
+    public ResponseEntity resetPassword(
     ) {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
@@ -92,7 +89,7 @@ public class UsuarioController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Usuario> resetPasswordCheckCode(
+    public ResponseEntity resetPasswordCheckCode(
         @Valid @RequestBody(
             description = "Reset code",
             required = true,
@@ -109,38 +106,8 @@ public class UsuarioController {
             path = "/config",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Usuario> getUserConfig() {
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Get user configuration")
-    @GetMapping(
-            path = "/config/notifications",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<Usuario> getUserConfigNotification() {
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Get user configuration")
-    @GetMapping(
-            path = "/config/security",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<Usuario> getUserConfigSecurity() {
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Get user configuration")
-    @GetMapping(
-            path = "/config/language",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<Usuario> getUserConfigLanguage() {
-        return ResponseEntity.status(HttpStatus.OK).build();
+    public ResponseEntity<UserConfig> getUserConfig() {
+        return ResponseEntity.status(HttpStatus.OK).body(new UserConfig());
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -149,7 +116,7 @@ public class UsuarioController {
             path = "/config",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Usuario> setUserConfig(@org.springframework.web.bind.annotation.RequestBody UserConfig config) {
+    public ResponseEntity setUserConfig(@org.springframework.web.bind.annotation.RequestBody UserConfig config) {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
@@ -169,5 +136,12 @@ public class UsuarioController {
         String language;
         boolean notification;
         boolean security;
+    }
+
+    @Data
+    public class UserSessionResponse {
+        String token;
+        String refreshToken;
+        String ttl;
     }
 }
