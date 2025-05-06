@@ -142,6 +142,19 @@ public class CursosController {
         return ResponseEntity.ok(response);
     }
 
+    // Pagar un curso
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Dar presente", description = "dar el presente en un curso")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "presente dado correctamente")
+    })
+    @PostMapping(value = "/presente/{cursoId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity scanQRPresente(@RequestParam int cursoId) {
+        PaymentCursoResponse response = new PaymentCursoResponse();
+        response.setMensaje("presente (mock)");
+        return ResponseEntity.ok().build();
+    }
+
     // Clases internas mock para request y response
 
     public static class CreateCursoRequest {
