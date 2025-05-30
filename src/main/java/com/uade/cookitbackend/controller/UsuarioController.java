@@ -1,22 +1,20 @@
 package com.uade.cookitbackend.controller;
 
-import com.uade.cookitbackend.dto.CreateUsuarioDTO;
+import com.uade.cookitbackend.dto.*;
 import com.uade.cookitbackend.entity.Usuario;
 import com.uade.cookitbackend.service.UsuarioService;
+import com.uade.cookitbackend.config.JwtUtil;
+import com.uade.cookitbackend.service.PasswordResetService;
+import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 
 @Tag(name = "Usuario", description = "API for managing users")
 @RestController
@@ -24,22 +22,22 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UsuarioController {
 
+    private final UsuarioMapper usuarioMapper;
     private final UsuarioService usuarioService;
+    private final JwtUtil jwtUtil;
+    private final PasswordResetService passwordResetService;
 
     @Operation(summary = "Registro de un nuevo usuario")
-    @PostMapping(
-        consumes = MediaType.APPLICATION_JSON_VALUE,
-        produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<Usuario> createUsuario(
-        @Valid @RequestBody(
-            description = "User creation data",
-            required = true,
-            content = @Content(schema = @Schema(implementation = CreateUsuarioDTO.class))
-        ) CreateUsuarioDTO createUsuarioDTO
+    @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserSessionResponse> register(
+        @Valid @RequestBody CreateUsuarioDTO createUsuarioDTO
     ) {
         Usuario createdUsuario = usuarioService.createUsuario(createUsuarioDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUsuario);
+        String token = jwtUtil.generateToken(createdUsuario.getIdUsuario(), createdUsuario.getMail());
+        UserSessionResponse response = new UserSessionResponse();
+        response.setToken(token);
+        response.setTtl("86400"); // 1 día en segundos
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(summary = "User login")
@@ -49,99 +47,70 @@ public class UsuarioController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<UserSessionResponse> login(
-        @Valid @RequestBody(
-            description = "User login data",
-            required = true,
-            content = @Content(schema = @Schema(implementation = UserLogin.class))
-        ) UserLogin usuarioLogin
+        @Valid @RequestBody UserLogin usuarioLogin
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(new UserSessionResponse());
+        Usuario usuario = usuarioService.login(usuarioLogin.getMail(), usuarioLogin.getPassword());
+        String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getMail());
+        UserSessionResponse response = new UserSessionResponse();
+        response.setToken(token);
+        response.setTtl("86400"); // 1 día en segundos
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "User profile")
     @GetMapping(
             path = "/profile",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Usuario> profile(@RequestHeader("Authorization") String token) {
-
-        return ResponseEntity.status(HttpStatus.OK).body(new Usuario());
+    public ResponseEntity<UserProfileResponseDTO> profile(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        Integer userId = jwtUtil.extractUserId(token);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Usuario usuario = usuarioService.getUsuarioById(userId);
+        UserProfileResponseDTO response = usuarioMapper.toUserProfileResponseDTO(usuario);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Recuperacion de password")
-    @PostMapping(
-            path = "/reset-password",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity resetPassword(
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Recuperacion de password checkcode")
-    @PostMapping(
-            path = "/reset-password/check-code",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity resetPasswordCheckCode(
-        @Valid @RequestBody(
-            description = "Reset code",
-            required = true,
-            content = @Content(schema = @Schema(implementation = ResetCode.class))
-        ) ResetCode code
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
-
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Get user configuration")
-    @GetMapping(
-            path = "/config",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<UserConfig> getUserConfig() {
-        return ResponseEntity.status(HttpStatus.OK).body(new UserConfig());
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Get user configuration")
     @PostMapping(
             path = "/config",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity setUserConfig(@org.springframework.web.bind.annotation.RequestBody UserConfig config) {
+    public ResponseEntity setUserConfig(@RequestBody UserConfig config) {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-    @Data
-    public class UserLogin{
-         String mail;
-         String password;
+    @Operation(summary = "Solicitar código de recuperación de contraseña")
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> requestPasswordReset(@RequestBody @Valid PasswordResetRequestDTO dto) {
+        // Genera y almacena el código
+        String code = passwordResetService.generateAndStoreCode(dto.getMail());
+        // Devuelve el código en el body (solo para pruebas, no en producción)
+        return ResponseEntity.ok().build();
     }
 
-    @Data
-    public class ResetCode{
-        String code;
+    @Operation(summary = "Validar código de recuperación de contraseña")
+    @PostMapping("/reset-password/check-code")
+    public ResponseEntity<Void> checkPasswordResetCode(@RequestBody @Valid PasswordResetCodeDTO dto) {
+        boolean valid = passwordResetService.validateCode(dto.getMail(), dto.getCode());
+        if (!valid) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        return ResponseEntity.ok().build();
     }
 
-    @Data
-    public class UserConfig{
-        String language;
-        boolean notification;
-        boolean security;
+    @Operation(summary = "Confirmar cambio de contraseña")
+    @PostMapping("/reset-password/confirm")
+    public ResponseEntity<Void> confirmPasswordReset(@RequestBody @Valid PasswordResetConfirmDTO dto) {
+        boolean valid = passwordResetService.validateCode(dto.getMail(), dto.getCode());
+        if (!valid) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        Usuario usuario = usuarioService.getUsuarioByMail(dto.getMail());
+        if (usuario == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        usuario.setPassword(dto.getNewPassword());
+        usuarioService.updateUsuario(usuario);
+        passwordResetService.removeCode(dto.getMail());
+        return ResponseEntity.ok().build();
     }
 
-    @Data
-    public class UserSessionResponse {
-        String token;
-        String refreshToken;
-        String ttl;
-    }
 }

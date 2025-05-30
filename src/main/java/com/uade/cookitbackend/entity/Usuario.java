@@ -34,4 +34,4 @@ public class Usuario {
 
     @Column(length = 300)
     private String avatar;
-} 
+}
