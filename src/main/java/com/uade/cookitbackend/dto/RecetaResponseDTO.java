@@ -21,4 +21,5 @@ public class RecetaResponseDTO {
     private String tipoRecetaDescripcion;
     private String usuarioNickname;
     private List<PasoDto> pasos;
+    private List<IngredienteUtilizadoDto> ingredientesUtilizados;
 }
