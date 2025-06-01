@@ -13,5 +13,5 @@ public interface RecetaService {
     List<RecetaResponseDTO> getRecetaByIdUsuario(Integer userId);
     List<RecetaResponseDTO> getRecetasWithoutIngrediente(String ingrediente, String orden);
     List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden);
-    RecetaResponseDTO getRecetaById(UUID id);
+    RecetaResponseDTO getRecetaById(Integer id);
 }

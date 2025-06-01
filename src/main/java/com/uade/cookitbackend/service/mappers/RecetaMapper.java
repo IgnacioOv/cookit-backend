@@ -20,6 +20,7 @@ public interface RecetaMapper {
 
     @Mapping(source = "receta.usuario.nickname", target = "usuarioNickname")
     @Mapping(source = "receta.tipoReceta.descripcion", target = "tipoRecetaDescripcion")
+    @Mapping(source = "receta.ingredientesUtilizados", target = "ingredientesUtilizados")
     RecetaResponseDTO recetaToRecetaResponseDTO(Receta receta);
 
 }

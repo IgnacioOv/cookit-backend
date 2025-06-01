@@ -1,7 +1,5 @@
 package com.uade.cookitbackend.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
@@ -16,4 +14,5 @@ public class CreateRecetaDTO {
     private Integer cantidadPersonas;
     private Integer idTipo;
     private List<PasoDto> pasos;
+    private List<IngredienteUtilizadoDto> ingredientesUtilizados;
 }

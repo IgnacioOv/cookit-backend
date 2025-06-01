@@ -21,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/recetas")
@@ -53,7 +52,7 @@ public class RecetaController {
         RecetaResponseDTO createdReceta = recetaService.createReceta(createRecetaDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReceta);
     }
-
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Get recetas by name")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
@@ -67,22 +66,22 @@ public class RecetaController {
         }
         return ResponseEntity.ok(recetas);
     }
-
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Get recetas by id")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "No recetas found")
     })
-    @GetMapping("/{id}")
-    public ResponseEntity<RecetaResponseDTO> getRecetasById(@RequestParam UUID id) {
+    @GetMapping("/")
+    public ResponseEntity<RecetaResponseDTO> getRecetasById(@RequestParam Integer id) {
         RecetaResponseDTO recetas = recetaService.getRecetaById(id);
         if (recetas == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(recetas);
     }
-
-    @GetMapping("/{usuario}")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/user/{usuario}")
     @Operation(summary = "Get recetas by user ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
@@ -95,7 +94,7 @@ public class RecetaController {
         }
         return ResponseEntity.ok(recetas);
     }
-
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Get recetas that do not contain a specific ingredient")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
@@ -111,7 +110,7 @@ public class RecetaController {
         }
         return ResponseEntity.ok(recetas);
     }
-
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Get recetas that contain a specific ingredient")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Recetas retrieved successfully"),
@@ -157,10 +156,7 @@ public class RecetaController {
             @RequestHeader("Authorization") String token,
             @RequestParam(name = "page", defaultValue = "0") Integer page,
             @RequestParam(name = "size", defaultValue = "5") Integer size,
-            @RequestParam(name = "sort", defaultValue = "[{\"field\":\"receta\",\"direction\":\"desc\"}]") String sort,
-            @RequestParam(name = "first_name", required = false) String firstName,
-            @RequestParam(name = "salary", required = false) Integer salary,
-            @RequestParam(name = "birth_year", required = false) Integer birthYear) {
+            @RequestParam(name = "sort", defaultValue = "[{\"field\":\"receta\",\"direction\":\"desc\"}]") String sort) {
 
         // Creando mock de respuesta
         RecetaResponseDTO mockReceta = new RecetaResponseDTO();
@@ -179,26 +175,9 @@ public class RecetaController {
     @GetMapping("/favorites")
     public ResponseEntity<List<RecetaResponseDTO>> getFavByUser(
             @RequestHeader("Authorization") String token) {
-
-        // Creando mock de respuesta
         RecetaResponseDTO mockReceta = new RecetaResponseDTO();
-        // ...asignar valores de ejemplo a mockReceta (ej. id, nombre, etc.)...
         List<RecetaResponseDTO> mockedList = List.of(mockReceta);
         return ResponseEntity.ok(mockedList);
-    }
-
-    @Operation(summary = "Get detail of receta by id")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receta retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Receta not found")
-    })
-    @GetMapping("/detail/{id}")
-    public ResponseEntity<RecetaResponseDTO> getRecetaById(@PathVariable UUID id) {
-        RecetaResponseDTO receta = recetaService.getRecetaById(id);
-        if (receta == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(receta);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -208,9 +187,8 @@ public class RecetaController {
             @ApiResponse(responseCode = "404", description = "Receta not found")
     })
     @GetMapping("/recents")
-    public ResponseEntity<List<RecetaResponseDTO>> getRecentReceta(@PathVariable UUID id) {
+    public ResponseEntity<List<RecetaResponseDTO>> getRecentReceta(@PathVariable Integer id) {
         RecetaResponseDTO mockReceta = new RecetaResponseDTO();
-        // ...asignar valores de ejemplo a mockReceta (ej. id, nombre, etc.)...
         List<RecetaResponseDTO> mockedList = List.of(mockReceta);
         return ResponseEntity.ok(mockedList);
     }
@@ -222,7 +200,7 @@ public class RecetaController {
             @ApiResponse(responseCode = "404", description = "Receta not found")
     })
     @GetMapping("/{id}/steps")
-    public ResponseEntity<StepsResponse> getStepsByRecetaId(@PathVariable UUID id) {
+    public ResponseEntity<StepsResponse> getStepsByRecetaId(@PathVariable Integer id) {
         RecetaResponseDTO receta = recetaService.getRecetaById(id);
         if (receta == null) {
             return ResponseEntity.notFound().build();
