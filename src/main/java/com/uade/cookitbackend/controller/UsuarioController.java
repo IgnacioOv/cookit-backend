@@ -117,6 +117,7 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
+
     @Operation(summary = "Confirmar cambio de contraseña")
     @PostMapping("/mail-verify/confirm")
     public ResponseEntity<Void> confirmVerifiMail(@RequestBody @Valid VerifyMailConfirmDTO dto) {
