@@ -1,5 +1,6 @@
 package com.uade.cookitbackend.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -7,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Service
 public class VerificationService {
     private static class CodeData {
@@ -40,12 +42,13 @@ public class VerificationService {
     public String generateAndStoreCodeVerificationMail(String mail) {
         String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6 dígitos
         LocalDateTime expiration = LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES);
+        log.info("code:{} ",code);
         resetCodes.put(mail, new CodeData(code, expiration));
         // Enviar email
         emailService.sendSimpleMessage(
                 mail,
-                "Recuperación de contraseña",
-                "Tu código de recuperación es: " + code + "\nEste código expirará en 15 minutos."
+                "Verificación de correo electrónico",
+                "Tu código de verificacion es: " + code + "\nEste código expirará en 15 minutos."
         );
         return code;
     }
