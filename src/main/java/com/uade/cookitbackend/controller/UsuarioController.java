@@ -117,4 +117,15 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Confirmar cambio de contraseña")
+    @PostMapping("/mail-verify/confirm")
+    public ResponseEntity<Void> confirmVerifiMail(@RequestBody @Valid VerifyMailConfirmDTO dto) {
+        boolean valid = passwordResetService.validateCode(dto.getMail(), dto.getCode());
+        if (!valid) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        Usuario usuario = usuarioService.getUsuarioByMail(dto.getMail());
+        if (usuario == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        passwordResetService.removeCode(dto.getMail());
+        return ResponseEntity.ok().build();
+    }
+
 }
