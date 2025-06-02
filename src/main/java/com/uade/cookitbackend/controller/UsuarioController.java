@@ -2,6 +2,7 @@ package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.*;
 import com.uade.cookitbackend.entity.Usuario;
+import com.uade.cookitbackend.service.SessionService;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.config.JwtUtil;
 import com.uade.cookitbackend.service.PasswordResetService;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UsuarioController {
 
+    private final SessionService sessionService;
     private final UsuarioMapper usuarioMapper;
     private final UsuarioService usuarioService;
     private final JwtUtil jwtUtil;
@@ -30,10 +32,11 @@ public class UsuarioController {
     @Operation(summary = "Registro de un nuevo usuario")
     @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserSessionResponse> register(
-        @Valid @RequestBody CreateUsuarioDTO createUsuarioDTO
+            @Valid @RequestBody CreateUsuarioDTO createUsuarioDTO
     ) {
         Usuario createdUsuario = usuarioService.createUsuario(createUsuarioDTO);
         String token = jwtUtil.generateToken(createdUsuario.getIdUsuario(), createdUsuario.getMail());
+        sessionService.newSession(createUsuarioDTO.getFcm(), createdUsuario);
         UserSessionResponse response = new UserSessionResponse();
         response.setToken(token);
         response.setTtl("86400"); // 1 día en segundos
@@ -47,9 +50,10 @@ public class UsuarioController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<UserSessionResponse> login(
-        @Valid @RequestBody UserLogin usuarioLogin
+            @Valid @RequestBody UserLogin usuarioLogin
     ) {
         Usuario usuario = usuarioService.login(usuarioLogin.getMail(), usuarioLogin.getPassword());
+        sessionService.newSession(usuarioLogin.getFcm(), usuario);
         String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getMail());
         UserSessionResponse response = new UserSessionResponse();
         response.setToken(token);

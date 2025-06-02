@@ -42,4 +42,8 @@ public class CreateUsuarioDTO {
     @Schema(description = "URL of user's avatar", example = "https://example.com/avatar.jpg")
     @Size(max = 300, message = "Avatar URL must not exceed 300 characters")
     private String avatar;
+
+    @Schema(description = "token to send notify", example = "sdfasdvasdlkj")
+    @Size(max = 30, message = "token must not exceed 30 characters")
+    private String fcm;
 } 
