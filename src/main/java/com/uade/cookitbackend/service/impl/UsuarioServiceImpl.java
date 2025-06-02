@@ -4,10 +4,13 @@ import com.uade.cookitbackend.dto.CreateUsuarioDTO;
 import com.uade.cookitbackend.entity.Usuario;
 import com.uade.cookitbackend.exception.DuplicateResourceException;
 import com.uade.cookitbackend.repository.db.UsuarioRepository;
+import com.uade.cookitbackend.service.EmailService;
 import com.uade.cookitbackend.service.UsuarioService;
+import com.uade.cookitbackend.service.VerificationService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,15 +21,21 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
+    @Autowired
+    private EmailService emailService;
+
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
+    private final VerificationService verificationService;
 
     @Override
     @Transactional
     public Usuario createUsuario(CreateUsuarioDTO createUsuarioDTO) {
         try {
             Usuario usuario = usuarioMapper.toEntity(createUsuarioDTO);
-            return usuarioRepository.save(usuario);
+            usuarioRepository.saveAndFlush(usuario);
+            verificationService.generateAndStoreCodeVerificationMail(usuario.getMail());
+            return usuario;
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateResourceException("Email already exists: " + createUsuarioDTO.getMail());
         }

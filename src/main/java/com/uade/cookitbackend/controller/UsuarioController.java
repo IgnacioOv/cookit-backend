@@ -5,7 +5,7 @@ import com.uade.cookitbackend.entity.Usuario;
 import com.uade.cookitbackend.service.SessionService;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.config.JwtUtil;
-import com.uade.cookitbackend.service.PasswordResetService;
+import com.uade.cookitbackend.service.VerificationService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -27,7 +27,7 @@ public class UsuarioController {
     private final UsuarioMapper usuarioMapper;
     private final UsuarioService usuarioService;
     private final JwtUtil jwtUtil;
-    private final PasswordResetService passwordResetService;
+    private final VerificationService passwordResetService;
 
     @Operation(summary = "Registro de un nuevo usuario")
     @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -91,7 +91,7 @@ public class UsuarioController {
     @PostMapping("/reset-password")
     public ResponseEntity<String> requestPasswordReset(@RequestBody @Valid PasswordResetRequestDTO dto) {
         // Genera y almacena el código
-        String code = passwordResetService.generateAndStoreCode(dto.getMail());
+        String code = passwordResetService.generateAndStoreCodeResetPassword(dto.getMail());
         // Devuelve el código en el body (solo para pruebas, no en producción)
         return ResponseEntity.ok().build();
     }

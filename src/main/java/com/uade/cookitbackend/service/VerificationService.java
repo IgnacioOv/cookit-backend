@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class PasswordResetService {
+public class VerificationService {
     private static class CodeData {
         String code;
         LocalDateTime expiration;
@@ -24,7 +24,7 @@ public class PasswordResetService {
     @Autowired
     private EmailService emailService;
 
-    public String generateAndStoreCode(String mail) {
+    public String generateAndStoreCodeResetPassword(String mail) {
         String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6 dígitos
         LocalDateTime expiration = LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES);
         resetCodes.put(mail, new CodeData(code, expiration));
@@ -33,6 +33,19 @@ public class PasswordResetService {
             mail,
             "Recuperación de contraseña",
             "Tu código de recuperación es: " + code + "\nEste código expirará en 15 minutos."
+        );
+        return code;
+    }
+
+    public String generateAndStoreCodeVerificationMail(String mail) {
+        String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6 dígitos
+        LocalDateTime expiration = LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES);
+        resetCodes.put(mail, new CodeData(code, expiration));
+        // Enviar email
+        emailService.sendSimpleMessage(
+                mail,
+                "Recuperación de contraseña",
+                "Tu código de recuperación es: " + code + "\nEste código expirará en 15 minutos."
         );
         return code;
     }
