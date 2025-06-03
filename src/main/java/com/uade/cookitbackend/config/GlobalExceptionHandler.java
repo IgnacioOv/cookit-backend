@@ -13,7 +13,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -102,5 +105,15 @@ public class GlobalExceptionHandler {
                 path
         );
         return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Manejador de ResponseStatusException para devolver siempre un JSON con { "error": "...mensaje..." }.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleResponseStatusException(ResponseStatusException ex) {
+        Map<String, String> errorBody = new HashMap<>();
+        errorBody.put("error", ex.getReason());
+        return new ResponseEntity<>(errorBody, ex.getStatusCode());
     }
 }
