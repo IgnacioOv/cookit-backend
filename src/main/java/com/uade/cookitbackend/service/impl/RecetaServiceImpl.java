@@ -2,12 +2,20 @@ package com.uade.cookitbackend.service.impl;
 
 import com.uade.cookitbackend.dto.CreateRecetaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
-import com.uade.cookitbackend.entity.*;
-import com.uade.cookitbackend.repository.db.RecetaRepository;
+import com.uade.cookitbackend.entity.Foto;
+import com.uade.cookitbackend.entity.IngredienteUtilizado;
+import com.uade.cookitbackend.entity.Paso;
+import com.uade.cookitbackend.entity.Receta;
+import com.uade.cookitbackend.entity.TipoReceta;
+import com.uade.cookitbackend.entity.Usuario;
+import com.uade.cookitbackend.exception.ErrorCode;
+import com.uade.cookitbackend.exception.ResourceNotFoundException;
 import com.uade.cookitbackend.repository.db.IngredienteRepository;
+import com.uade.cookitbackend.repository.db.RecetaRepository;
 import com.uade.cookitbackend.repository.db.UnidadRepository;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.UsuarioService;
+import com.uade.cookitbackend.service.impl.TipoRecetaServiceImpl;
 import com.uade.cookitbackend.service.mappers.RecetaMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -34,52 +42,80 @@ public class RecetaServiceImpl implements RecetaService {
     @Override
     @Transactional
     public RecetaResponseDTO createReceta(CreateRecetaDTO createRecetaDTO) {
+        // 1. Verificar existencia de Usuario
         Usuario usuario = usuarioService.getUsuarioById(createRecetaDTO.getIdUsuario());
-        TipoReceta tipoReceta = tipoRecetaServiceImpl.getTipoRecetaById(createRecetaDTO.getIdTipo());
+        if (usuario == null) {
+            throw new ResourceNotFoundException(
+                    ErrorCode.USUARIO_NOT_FOUND,
+                    "Usuario con ID " + createRecetaDTO.getIdUsuario() + " no encontrado."
+            );
+        }
 
+        // 2. Verificar existencia de TipoReceta
+        TipoReceta tipoReceta = tipoRecetaServiceImpl.getTipoRecetaById(createRecetaDTO.getIdTipo());
+        if (tipoReceta == null) {
+            throw new ResourceNotFoundException(
+                    ErrorCode.TIPO_RECETA_NOT_FOUND,
+                    "TipoReceta con ID " + createRecetaDTO.getIdTipo() + " no encontrado."
+            );
+        }
+
+        // 3. Mapear DTO a entidad Receta
         Receta receta = recetaMapper.toEntity(createRecetaDTO);
         receta.setUsuario(usuario);
         receta.setTipoReceta(tipoReceta);
 
+        // 4. Mapear IngredientesUtilizados (si vienen)
         if (createRecetaDTO.getIngredientesUtilizados() != null) {
-            List<IngredienteUtilizado> ingredientesUtilizados = createRecetaDTO.getIngredientesUtilizados().stream().map(dto -> {
-                IngredienteUtilizado iu = new IngredienteUtilizado();
-                iu.setReceta(receta);
-                iu.setCantidad(dto.getCantidad());
-                iu.setObservaciones(dto.getObservaciones());
-                if (dto.getIdIngrediente() != null) {
-                    iu.setIngrediente(ingredienteRepository.findById(dto.getIdIngrediente()).orElse(null));
-                }
-                if (dto.getIdUnidad() != null) {
-                    iu.setUnidad(unidadRepository.findById(dto.getIdUnidad()).orElse(null));
-                }
-                return iu;
-            }).collect(Collectors.toList());
+            List<IngredienteUtilizado> ingredientesUtilizados = createRecetaDTO.getIngredientesUtilizados().stream()
+                    .map(dto -> {
+                        IngredienteUtilizado iu = new IngredienteUtilizado();
+                        iu.setReceta(receta);
+                        iu.setCantidad(dto.getCantidad());
+                        iu.setObservaciones(dto.getObservaciones());
+
+                        if (dto.getIdIngrediente() != null) {
+                            ingredienteRepository.findById(dto.getIdIngrediente())
+                                    .ifPresent(i -> iu.setIngrediente(i));
+                        }
+                        if (dto.getIdUnidad() != null) {
+                            unidadRepository.findById(dto.getIdUnidad())
+                                    .ifPresent(u -> iu.setUnidad(u));
+                        }
+                        return iu;
+                    })
+                    .collect(Collectors.toList());
             receta.setIngredientesUtilizados(ingredientesUtilizados);
         }
 
-        // Persistir foto principal como entidad Foto
+        // 5. Persistir foto principal como entidad Foto (si llegó URL)
         if (createRecetaDTO.getFotoPrincipal() != null && !createRecetaDTO.getFotoPrincipal().isEmpty()) {
             Foto foto = crearFotoPrincipal(createRecetaDTO.getFotoPrincipal(), receta);
             receta.setFotos(List.of(foto));
         }
 
-        for (Paso paso : receta.getPasos()) {
-            paso.setReceta(receta);
-            if (paso.getMultimedia() != null) {
-                for (Multimedia multimedia : paso.getMultimedia()) {
-                    multimedia.setPaso(paso);
+        // 6. Ajustar entity graph de Pasos y Multimedia antes de guardar
+        if (receta.getPasos() != null) {
+            for (Paso paso : receta.getPasos()) {
+                paso.setReceta(receta);
+                if (paso.getMultimedia() != null) {
+                    paso.getMultimedia().forEach(m -> m.setPaso(paso));
                 }
             }
         }
 
+        // 7. Guardar en BD
         val savedReceta = recetaRepository.save(receta);
+
+        // 8. Mapear de vuelta a DTO de respuesta
         return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
     }
 
     @Override
     public List<RecetaResponseDTO> getRecetasByNombre(String nombreReceta) {
-        List<Receta> recetas = recetaRepository.findByNombreRecetaContainingIgnoreCaseOrderByIdRecetaDesc(nombreReceta);
+        List<Receta> recetas = recetaRepository
+                .findByNombreRecetaContainingIgnoreCaseOrderByIdRecetaDesc(nombreReceta);
+
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -111,7 +147,7 @@ public class RecetaServiceImpl implements RecetaService {
                 ? Sort.by(Sort.Direction.ASC, "idReceta")
                 : Sort.by(Sort.Direction.DESC, "idReceta");
 
-        List<Receta> recetas = recetaRepository.findRecetasConIngrediente(ingrediente,sort);
+        List<Receta> recetas = recetaRepository.findRecetasConIngrediente(ingrediente, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -119,26 +155,29 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public RecetaResponseDTO getRecetaById(Integer id) {
-        Optional<Receta> recetaOptional = recetaRepository.findById(id);
-        if (recetaOptional.isPresent()) {
-            Receta receta = recetaOptional.get();
-            return recetaMapper.recetaToRecetaResponseDTO(receta);
-        } else {
-            throw new EntityNotFoundException(
-                    "Receta con ID " + id + " no encontrada."
-            );
-        }
+        Receta receta = recetaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.RECETA_NOT_FOUND,
+                        "Receta con ID " + id + " no encontrada."
+                ));
+        return recetaMapper.recetaToRecetaResponseDTO(receta);
     }
 
+    /**
+     * Método auxiliar para crear la entidad Foto principal a partir de una URL.
+     */
     private Foto crearFotoPrincipal(String urlFoto, Receta receta) {
         Foto foto = new Foto();
         foto.setReceta(receta);
         foto.setUrlFoto(urlFoto);
+
         String extension = null;
         int lastDot = urlFoto.lastIndexOf('.');
         if (lastDot != -1 && lastDot < urlFoto.length() - 1) {
             extension = urlFoto.substring(lastDot + 1);
-            if (extension.length() > 5) extension = extension.substring(0, 5);
+            if (extension.length() > 5) {
+                extension = extension.substring(0, 5);
+            }
         }
         foto.setExtension(extension);
         return foto;
