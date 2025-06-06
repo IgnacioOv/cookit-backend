@@ -16,13 +16,16 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final EmailService emailService;
     private final UsuarioRepository usuarioRepository;
-    private final UsuarioMapper usuarioMapper;
+    private final UsuarioMapper usuarioMapper = UsuarioMapper.INSTANCE;
     private final VerificationService verificationService;
 
     @Override
@@ -36,13 +39,13 @@ public class UsuarioServiceImpl implements UsuarioService {
             );
         }
 
-        // 2. Validar duplicado de nickname
         if (usuarioRepository.existsByNickname(createUsuarioDTO.getNickname())) {
+            List<String> sugerencias = sugerirNicknames(createUsuarioDTO.getNickname());
             throw new DuplicateResourceException(
                     ErrorCode.DUPLICATE_RESOURCE,
-                    "Nickname already exists: " + createUsuarioDTO.getNickname()
-            );
-        }
+                    "Nickname already exists: " + createUsuarioDTO.getNickname(),
+                    sugerencias
+            );}
 
         // 3. Mapear y persistir usuario
         Usuario usuario = usuarioMapper.toEntity(createUsuarioDTO);
@@ -102,4 +105,15 @@ public class UsuarioServiceImpl implements UsuarioService {
     public Usuario updateUsuario(Usuario usuario) {
         return usuarioRepository.save(usuario);
     }
+
+        private List<String> sugerirNicknames(String base) {
+            List<String> sugerencias = new ArrayList<>();
+            for (int i = 1; i <= 20 && sugerencias.size() < 3; i++) {
+                String sugerido = base + i;
+                if (!usuarioRepository.existsByNickname(sugerido)) {
+                    sugerencias.add(sugerido);
+                }
+            }
+            return sugerencias;
+        }
 }
