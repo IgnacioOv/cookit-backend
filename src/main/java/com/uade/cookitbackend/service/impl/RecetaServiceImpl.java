@@ -163,6 +163,13 @@ public class RecetaServiceImpl implements RecetaService {
         return recetaMapper.recetaToRecetaResponseDTO(receta);
     }
 
+    @Override
+    public List<RecetaResponseDTO> getFeed() {
+        // retornar todas las recetas en orden descendente con un limite de 20
+        List<Receta> recetas = recetaRepository.findAll(Sort.by(Sort.Direction.DESC, "idReceta"));
+        return recetaMapper.recetaToRecetaResponseDTO(recetas);
+    }
+
     /**
      * Método auxiliar para crear la entidad Foto principal a partir de una URL.
      */
