@@ -14,6 +14,5 @@ public class UserLogin {
     private String password;
 
     @Schema(description = "token to send notify", example = "sdfasdvasdlkj")
-    @Size(max = 30, message = "token must not exceed 30 characters")
     private String fcm;
 }

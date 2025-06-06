@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class MultimediaDTO {
-    private Integer idPaso;  // ID del paso al que pertenece el multimedia
+    private Integer idPaso;
     private String urlContenido;
     private String extension;
     private String tipoContenido;

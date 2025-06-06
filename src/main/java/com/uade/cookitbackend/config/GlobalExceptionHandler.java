@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -42,16 +44,20 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ApiError> handleConflict(DuplicateResourceException ex, WebRequest request) {
+    public ResponseEntity<ApiErrorDuplicateNickname> handleConflict(DuplicateResourceException ex, WebRequest request) {
         String path = request.getDescription(false).replace("uri=", "");
-        ApiError apiError = new ApiError(
-                ex.getHttpStatus(),
+        ApiErrorDuplicateNickname apiError = new ApiErrorDuplicateNickname(
+                LocalDateTime.now(),
+                ex.getHttpStatus().value(),
+                ex.getHttpStatus().getReasonPhrase(),
                 ex.getErrorCode(),
                 ex.getMessage(),
-                path
+                path,
+                ex.getSugerencias() != null ? ex.getSugerencias() : List.of()
         );
         return new ResponseEntity<>(apiError, ex.getHttpStatus());
     }
+
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex, WebRequest request) {
@@ -115,5 +121,20 @@ public class GlobalExceptionHandler {
         Map<String, String> errorBody = new HashMap<>();
         errorBody.put("error", ex.getReason());
         return new ResponseEntity<>(errorBody, ex.getStatusCode());
+    }
+
+
+    @ExceptionHandler(UserNotEnabledException.class)
+    public ResponseEntity<ApiError> handleUserNotEnabled(UserNotEnabledException ex, WebRequest request) {
+        String path = request.getDescription(false).replace("uri=", "");
+        ApiError apiError = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Forbidden",
+                ex.getErrorCode(),
+                ex.getMessage(),
+                path
+        );
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 }
