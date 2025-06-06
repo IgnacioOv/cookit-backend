@@ -278,7 +278,7 @@ public class UsuarioController {
                             schema = @Schema(implementation = ApiError.class)))
     })
     @PostMapping("/mail-verify/confirm")
-    public ResponseEntity<Void> confirmVerifiMail(
+    public ResponseEntity<Void> confirmVerifyMail(
             @Valid @RequestBody VerifyMailConfirmDTO dto
     ) {
         boolean valid = verificationService.validateCode(dto.getMail(), dto.getCode());

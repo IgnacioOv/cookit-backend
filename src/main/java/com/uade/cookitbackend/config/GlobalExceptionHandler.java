@@ -122,4 +122,19 @@ public class GlobalExceptionHandler {
         errorBody.put("error", ex.getReason());
         return new ResponseEntity<>(errorBody, ex.getStatusCode());
     }
+
+
+    @ExceptionHandler(UserNotEnabledException.class)
+    public ResponseEntity<ApiError> handleUserNotEnabled(UserNotEnabledException ex, WebRequest request) {
+        String path = request.getDescription(false).replace("uri=", "");
+        ApiError apiError = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Forbidden",
+                ex.getErrorCode(),
+                ex.getMessage(),
+                path
+        );
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
 }

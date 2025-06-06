@@ -28,8 +28,8 @@ public class CreateUsuarioDTO {
     @Size(max = 40, message = "Password must not exceed 40 characters")
     private String password;
 
-    @Schema(description = "User's enabled status", example = "Si", allowableValues = {"Si", "No"})
-    private EstadoHabilitado habilitado = EstadoHabilitado.Si; // Default value
+    @Schema(description = "User's enabled status", example = "NO", allowableValues = {"Si", "No"})
+    private EstadoHabilitado habilitado = EstadoHabilitado.No; // Default value
 
     @Schema(description = "User's full name", example = "John Doe")
     @Size(max = 150, message = "Name must not exceed 150 characters")
