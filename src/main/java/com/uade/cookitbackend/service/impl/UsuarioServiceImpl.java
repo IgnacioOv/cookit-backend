@@ -6,7 +6,6 @@ import com.uade.cookitbackend.enums.EstadoHabilitado;
 import com.uade.cookitbackend.exception.*;
 import com.uade.cookitbackend.repository.db.UsuarioRepository;
 import com.uade.cookitbackend.service.UsuarioService;
-import com.uade.cookitbackend.service.VerificationService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

@@ -1,4 +1,4 @@
-package com.uade.cookitbackend.service;
+package com.uade.cookitbackend.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,34 +21,44 @@ public class VerificationService {
     }
 
     private final Map<String, CodeData> resetCodes = new ConcurrentHashMap<>();
-    private static final int EXPIRATION_MINUTES = 15;
+    private static final int RESET_EXPIRATION_MINUTES = 30;
+    private static final int VERIFICATION_EXPIRATION_HOURS = 24;
 
     @Autowired
     private EmailService emailService;
 
     public String generateAndStoreCodeResetPassword(String mail) {
         String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6 dígitos
-        LocalDateTime expiration = LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES);
+        LocalDateTime expiration = LocalDateTime.now().plusMinutes(RESET_EXPIRATION_MINUTES);
         resetCodes.put(mail, new CodeData(code, expiration));
-        // Enviar email
-        emailService.sendSimpleMessage(
-            mail,
-            "Recuperación de contraseña",
-            "Tu código de recuperación es: " + code + "\nEste código expirará en 15 minutos."
+        emailService.sendHtmlMessage(
+                mail,
+                "Recuperación de contraseña",
+                "reset-password",  // procesará src/main/resources/templates/mail/reset-password.html
+                Map.of(
+                        "name", mail,
+                        "code", code,
+                        "minutes", RESET_EXPIRATION_MINUTES
+                )
         );
         return code;
     }
 
     public String generateAndStoreCodeVerificationMail(String mail) {
         String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6 dígitos
-        LocalDateTime expiration = LocalDateTime.now().plusMinutes(EXPIRATION_MINUTES);
+        LocalDateTime expiration = LocalDateTime.now().plusHours(VERIFICATION_EXPIRATION_HOURS);
         log.info("code:{} ",code);
         resetCodes.put(mail, new CodeData(code, expiration));
         // Enviar email
-        emailService.sendSimpleMessage(
+        emailService.sendHtmlMessage(
                 mail,
                 "Verificación de correo electrónico",
-                "Tu código de verificacion es: " + code + "\nEste código expirará en 15 minutos."
+                "verification",   // procesará src/main/resources/templates/mail/verification.html
+                Map.of(
+                        "name", mail,
+                        "code", code,
+                        "hours", VERIFICATION_EXPIRATION_HOURS
+                )
         );
         return code;
     }
