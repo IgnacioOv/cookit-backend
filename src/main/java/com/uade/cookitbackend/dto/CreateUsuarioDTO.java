@@ -1,5 +1,6 @@
 package com.uade.cookitbackend.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.uade.cookitbackend.enums.EstadoHabilitado;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,7 +29,7 @@ public class CreateUsuarioDTO {
     @Size(max = 40, message = "Password must not exceed 40 characters")
     private String password;
 
-    @Schema(description = "User's enabled status", example = "NO", allowableValues = {"Si", "No"})
+    @JsonIgnore
     private EstadoHabilitado habilitado = EstadoHabilitado.No; // Default value
 
     @Schema(description = "User's full name", example = "John Doe")
@@ -46,4 +47,4 @@ public class CreateUsuarioDTO {
     @Schema(description = "token to send notify", example = "sdfasdvasdlkj")
     @Size(max = 30, message = "token must not exceed 30 characters")
     private String fcm;
-} 
+}
