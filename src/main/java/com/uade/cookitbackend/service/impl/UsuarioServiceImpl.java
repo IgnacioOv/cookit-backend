@@ -21,7 +21,7 @@ import java.util.List;
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final UsuarioMapper usuarioMapper = UsuarioMapper.INSTANCE;
+    private final UsuarioMapper usuarioMapper;
     private final VerificationService verificationService;
 
     @Override

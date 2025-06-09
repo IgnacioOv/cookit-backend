@@ -1,16 +1,19 @@
 package com.uade.cookitbackend.service.impl;
 
-import com.uade.cookitbackend.dto.AlumnoCreateDTO;
+
 import com.uade.cookitbackend.dto.AlumnoResponseDTO;
 import com.uade.cookitbackend.dto.AlumnoUpdateDTO;
+import com.uade.cookitbackend.dto.AlumnoWithUsuarioDTO;
+import com.uade.cookitbackend.dto.CreateUsuarioDTO;
 import com.uade.cookitbackend.entity.Alumno;
 import com.uade.cookitbackend.entity.Usuario;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
 import com.uade.cookitbackend.repository.db.AlumnoRepository;
-import com.uade.cookitbackend.repository.db.UsuarioRepository;
 import com.uade.cookitbackend.service.AlumnoService;
 import com.uade.cookitbackend.service.mappers.AlumnoMapper;
+import com.uade.cookitbackend.service.mappers.UsuarioMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,23 +24,23 @@ import java.util.List;
 public class AlumnoServiceImpl implements AlumnoService {
 
     private final AlumnoRepository alumnoRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioServiceImpl usuarioService;
     private final AlumnoMapper alumnoMapper;
+    private final UsuarioMapper usuarioMapper;
 
-    @Override
-    public AlumnoResponseDTO createAlumno(AlumnoCreateDTO dto) {
-        // Buscamos el usuario relacionado
-        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND,
-                        "Usuario not found with id: " + dto.getUsuarioId()));
+    @Transactional
+    public AlumnoResponseDTO createAlumnoWithUsuario(AlumnoWithUsuarioDTO dto) {
+        // 1. Crear el usuario usando la lógica existente
+        CreateUsuarioDTO usuarioDTO = usuarioMapper.fromComposedDTO(dto);
+        Usuario usuario = usuarioService.createUsuario(usuarioDTO); // tu método de creación/validación
 
-        // Creamos el Alumno usando MapStruct
-        Alumno alumno = alumnoMapper.toEntity(dto, usuario);
+        // 2. Crear el alumno usando el mapper
+        Alumno alumno = alumnoMapper.toEntityFromComposedDTO(dto, usuario);
         alumno = alumnoRepository.save(alumno);
 
+        // 3. Devolver el DTO de respuesta
         return alumnoMapper.toResponseDTO(alumno);
     }
-
     @Override
     public AlumnoResponseDTO getAlumnoById(Integer id) {
         Alumno alumno = alumnoRepository.findById(id)

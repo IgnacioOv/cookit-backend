@@ -24,13 +24,13 @@ public class ApiError {
     @Schema(description = "Descripción corta del estado HTTP", example = "Not Found")
     private String error;
 
-    @Schema(description = "Código interno de la aplicación", example = "RECETA_NOT_FOUND")
+    @Schema(description = "Código interno de la aplicación", example = "ERROR_CODE")
     private ErrorCode code;
 
-    @Schema(description = "Mensaje detallado para el cliente", example = "Receta con ID 123 no encontrada.")
+    @Schema(description = "Mensaje detallado para el cliente", example = "Recurso no encontrado")
     private String message;
 
-    @Schema(description = "Ruta que se intentó invocar", example = "/api/recetas/123")
+    @Schema(description = "Ruta que se intentó invocar", example = "/api/example")
     private String path;
 
     public ApiError(HttpStatus status, ErrorCode code, String message, String path) {
