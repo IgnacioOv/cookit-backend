@@ -27,6 +27,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/users/login",
                                 "/api/users/register",
+                                "/api/media",
                                 "/api/alumnos/register-full",
                                 "/api/users/reset-password",
                                 "/api/users/reset-password/check-code",
