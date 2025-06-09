@@ -146,13 +146,9 @@ public class RecetaController {
             @ApiResponse(responseCode = "404", description = "No se encontró feed")
     })
     @GetMapping("/feed")
-    public ResponseEntity<List<RecetaResponseDTO>> getFeedByUser(
-            @RequestHeader("Authorization") String token,
-            @RequestParam String ingrediente,
-            @RequestParam(defaultValue = "nombre") String orden
-    ) {
+    public ResponseEntity<List<RecetaResponseDTO>> getFeedByUser() {
         List<RecetaResponseDTO> recetas =
-                recetaService.getRecetasWithIngrediente(ingrediente, orden);
+                recetaService.getFeed();
         if (recetas.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

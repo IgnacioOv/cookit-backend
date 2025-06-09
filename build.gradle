@@ -29,6 +29,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
     implementation 'com.google.firebase:firebase-admin:9.2.0'
     implementation 'com.cloudinary:cloudinary-http44:1.34.0'
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
@@ -38,6 +39,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5' // Para soporte JSON
 
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation('org.springframework.boot:spring-boot-starter-thymeleaf')
 
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

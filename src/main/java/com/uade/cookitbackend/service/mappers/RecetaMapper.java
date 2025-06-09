@@ -10,6 +10,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
+import java.util.List;
+
 @Mapper(uses = {PasoMapper.class, IngredienteMapper.class})
 
 public interface RecetaMapper {
@@ -22,5 +24,6 @@ public interface RecetaMapper {
     @Mapping(source = "receta.tipoReceta.descripcion", target = "tipoRecetaDescripcion")
     @Mapping(source = "receta.ingredientesUtilizados", target = "ingredientesUtilizados")
     RecetaResponseDTO recetaToRecetaResponseDTO(Receta receta);
+    List<RecetaResponseDTO> recetaToRecetaResponseDTO(List<Receta> receta);
 
 }

@@ -9,7 +9,7 @@ import com.uade.cookitbackend.exception.UnauthorizedException;
 import com.uade.cookitbackend.service.SessionService;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.config.JwtUtil;
-import com.uade.cookitbackend.service.VerificationService;
+import com.uade.cookitbackend.service.impl.VerificationService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
