@@ -2,6 +2,7 @@ package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.*;
 import com.uade.cookitbackend.entity.Usuario;
+import com.uade.cookitbackend.enums.EstadoHabilitado;
 import com.uade.cookitbackend.exception.ApiError;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
@@ -297,6 +298,8 @@ public class UsuarioController {
             );
         }
 
+        usuario.setHabilitado(EstadoHabilitado.Si);
+        usuarioService.updateUsuario(usuario);
         verificationService.removeCode(dto.getMail());
         return ResponseEntity.ok().build();
     }
