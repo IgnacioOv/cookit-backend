@@ -17,7 +17,6 @@ import java.util.List;
 @RequestMapping("/api/cursos")
 public class CursosController {
 
-    // Crear curso
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Crear un curso", description = "Crea un curso con datos mockeados")
     @ApiResponses(value = {
@@ -37,7 +36,6 @@ public class CursosController {
         return ResponseEntity.status(201).body(response);
     }
 
-    // Sumarse a un curso
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Sumarse a un curso", description = "Se añade el usuario al curso indicado de forma mockeada")
     @ApiResponses(value = {
@@ -56,7 +54,6 @@ public class CursosController {
         return ResponseEntity.ok(response);
     }
 
-    // Ver detalles del curso
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Ver detalles del curso", description = "Obtiene detalles del curso por ID (mock)")
     @ApiResponses(value = {
@@ -72,7 +69,6 @@ public class CursosController {
         return ResponseEntity.ok(response);
     }
 
-    // Ver mis cursos
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Ver mis cursos", description = "Obtiene la lista de cursos del usuario (mock)")
     @ApiResponses(value = {
@@ -86,7 +82,6 @@ public class CursosController {
         return ResponseEntity.ok(List.of(curso));
     }
 
-    // Ver cursos terminados
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Ver cursos terminados", description = "Obtiene la lista de cursos finalizados del usuario (mock)")
     @ApiResponses(value = {
@@ -100,14 +95,12 @@ public class CursosController {
         return ResponseEntity.ok(List.of(curso));
     }
 
-    // Ver todos los cursos (público)
     @Operation(summary = "Ver todos los cursos", description = "Obtiene la lista de todos los cursos disponibles (mock)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Listado de cursos disponibles")
     })
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<CursoResponse>> getAllCursos() {
-        // Simular varios cursos para la respuesta mock
         CursoResponse curso1 = new CursoResponse();
         curso1.setId(1);
         curso1.setNombreCurso("Cocina italiana");
@@ -123,7 +116,6 @@ public class CursosController {
         return ResponseEntity.ok(List.of(curso1, curso2, curso3));
     }
 
-    // Pagar un curso
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Pagar un curso", description = "Realiza el pago de un curso de forma mockeada")
     @ApiResponses(value = {
@@ -142,7 +134,6 @@ public class CursosController {
         return ResponseEntity.ok(response);
     }
 
-    // Pagar un curso
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Dar presente", description = "dar el presente en un curso")
     @ApiResponses(value = {
@@ -154,8 +145,6 @@ public class CursosController {
         response.setMensaje("presente (mock)");
         return ResponseEntity.ok().build();
     }
-
-    // Clases internas mock para request y response
 
     public static class CreateCursoRequest {
         private String nombreCurso;

@@ -30,15 +30,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 
     @Transactional
     public AlumnoResponseDTO createAlumnoWithUsuario(AlumnoWithUsuarioDTO dto) {
-        // 1. Crear el usuario usando la lógica existente
         CreateUsuarioDTO usuarioDTO = usuarioMapper.fromComposedDTO(dto);
-        Usuario usuario = usuarioService.createUsuario(usuarioDTO); // tu método de creación/validación
+        Usuario usuario = usuarioService.createUsuario(usuarioDTO);
 
-        // 2. Crear el alumno usando el mapper
         Alumno alumno = alumnoMapper.toEntityFromComposedDTO(dto, usuario);
         alumno = alumnoRepository.save(alumno);
 
-        // 3. Devolver el DTO de respuesta
         return alumnoMapper.toResponseDTO(alumno);
     }
     @Override
@@ -55,8 +52,6 @@ public class AlumnoServiceImpl implements AlumnoService {
         return alumnos.stream()
                 .map(alumnoMapper::toResponseDTO)
                 .toList();
-        // O directamente si agregás el método en el mapper:
-        // return alumnoMapper.toResponseDTOList(alumnos);
     }
 
     @Override

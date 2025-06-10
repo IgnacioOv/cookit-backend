@@ -26,7 +26,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public Usuario createUsuario(CreateUsuarioDTO createUsuarioDTO) {
-        // 1. Validar duplicado de email pero chequeando estado habilitado
         Usuario usuarioExistente = usuarioRepository.findByMail(createUsuarioDTO.getMail()).orElse(null);
         if (usuarioExistente != null) {
             if (usuarioExistente.getHabilitado() != null && usuarioExistente.getHabilitado() == EstadoHabilitado.No) {
@@ -41,7 +40,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             );
         }
 
-        // 2. Validar duplicado de nickname
         if (usuarioRepository.existsByNickname(createUsuarioDTO.getNickname())) {
             List<String> sugerencias = sugerirNicknames(createUsuarioDTO.getNickname());
             throw new DuplicateResourceException(
@@ -51,7 +49,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             );
         }
 
-        // 3. Mapear y persistir usuario
         Usuario usuario = usuarioMapper.toEntity(createUsuarioDTO);
         try {
             usuarioRepository.saveAndFlush(usuario);
@@ -62,7 +59,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             );
         }
 
-        // 4. Generar y almacenar código de verificación
         verificationService.generateAndStoreCodeVerificationMail(usuario.getMail());
         return usuario;
     }

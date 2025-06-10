@@ -21,11 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Maneja globalmente las excepciones lanzadas desde los controladores.
- * Solo aplica a los controladores en el paquete com.uade.cookitbackend.controller
- * para no interferir con los endpoints de Swagger/OpenAPI.
- */
 @Hidden
 @Slf4j
 @RestControllerAdvice(basePackages = "com.uade.cookitbackend.controller")
@@ -113,9 +108,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    /**
-     * Manejador de ResponseStatusException para devolver siempre un JSON con { "error": "...mensaje..." }.
-     */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, String>> handleResponseStatusException(ResponseStatusException ex) {
         Map<String, String> errorBody = new HashMap<>();

@@ -181,7 +181,6 @@ public class UsuarioController {
             );
         }
 
-        // Lógica de guardado de configuración (mock por ahora).
         return ResponseEntity.ok().build();
     }
 

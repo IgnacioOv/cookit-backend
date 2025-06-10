@@ -22,7 +22,6 @@ public class MediaController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public List<String> uploadMedia(@RequestPart("files") List<MultipartFile> files) {
-        // 1. Validar que se envíe al menos un archivo
         if (files == null || files.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -30,14 +29,12 @@ public class MediaController {
             );
         }
 
-        // 2. Procesar cada archivo (se delega la validación/errores a upload(file))
         return files.stream()
                 .map(this::upload)
                 .toList();
     }
 
     private String upload(MultipartFile file) {
-        // 2.1. Validar que el archivo no esté vacío
         if (file.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -45,7 +42,6 @@ public class MediaController {
             );
         }
 
-        // 2.2. Validar tipo MIME soportado (imagen o video)
         String contentType = file.getContentType();
         if (contentType == null ||
                 (!contentType.startsWith("image/") && !contentType.startsWith("video/"))) {
@@ -59,7 +55,6 @@ public class MediaController {
         try {
             Map<String, Object> params = new HashMap<>();
             params.put("folder", "recetas");
-            // Cloudinary detecta automáticamente si es imagen o video
             params.put("resource_type", "auto");
 
             @SuppressWarnings("unchecked")
@@ -69,14 +64,12 @@ public class MediaController {
 
             return (String) result.get("secure_url");
         } catch (IOException e) {
-            // Si falla la lectura o envío a Cloudinary
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "No se pudo leer/subir el archivo '" + file.getOriginalFilename() + "'",
                     e
             );
         } catch (Exception e) {
-            // Cualquier otro error (por ejemplo, respuesta inesperada de Cloudinary)
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Error al procesar el archivo '" + file.getOriginalFilename() + "'",

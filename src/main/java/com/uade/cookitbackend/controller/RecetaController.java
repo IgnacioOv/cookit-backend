@@ -220,7 +220,6 @@ public class RecetaController {
         return ResponseEntity.ok(new StepsResponse(receta.getPasos()));
     }
 
-    /** Clase anidada para envolver la lista de pasos en la respuesta JSON. */
     public static class StepsResponse {
         private List<PasoDto> steps;
 

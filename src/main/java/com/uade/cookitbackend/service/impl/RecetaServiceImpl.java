@@ -42,7 +42,6 @@ public class RecetaServiceImpl implements RecetaService {
     @Override
     @Transactional
     public RecetaResponseDTO createReceta(CreateRecetaDTO createRecetaDTO) {
-        // 1. Verificar existencia de Usuario
         Usuario usuario = usuarioService.getUsuarioById(createRecetaDTO.getIdUsuario());
         if (usuario == null) {
             throw new ResourceNotFoundException(
@@ -51,7 +50,6 @@ public class RecetaServiceImpl implements RecetaService {
             );
         }
 
-        // 2. Verificar existencia de TipoReceta
         TipoReceta tipoReceta = tipoRecetaServiceImpl.getTipoRecetaById(createRecetaDTO.getIdTipo());
         if (tipoReceta == null) {
             throw new ResourceNotFoundException(
@@ -60,12 +58,10 @@ public class RecetaServiceImpl implements RecetaService {
             );
         }
 
-        // 3. Mapear DTO a entidad Receta
         Receta receta = recetaMapper.toEntity(createRecetaDTO);
         receta.setUsuario(usuario);
         receta.setTipoReceta(tipoReceta);
 
-        // 4. Mapear IngredientesUtilizados (si vienen)
         if (createRecetaDTO.getIngredientesUtilizados() != null) {
             List<IngredienteUtilizado> ingredientesUtilizados = createRecetaDTO.getIngredientesUtilizados().stream()
                     .map(dto -> {
@@ -88,13 +84,11 @@ public class RecetaServiceImpl implements RecetaService {
             receta.setIngredientesUtilizados(ingredientesUtilizados);
         }
 
-        // 5. Persistir foto principal como entidad Foto (si llegó URL)
         if (createRecetaDTO.getFotoPrincipal() != null && !createRecetaDTO.getFotoPrincipal().isEmpty()) {
             Foto foto = crearFotoPrincipal(createRecetaDTO.getFotoPrincipal(), receta);
             receta.setFotos(List.of(foto));
         }
 
-        // 6. Ajustar entity graph de Pasos y Multimedia antes de guardar
         if (receta.getPasos() != null) {
             for (Paso paso : receta.getPasos()) {
                 paso.setReceta(receta);
@@ -104,10 +98,8 @@ public class RecetaServiceImpl implements RecetaService {
             }
         }
 
-        // 7. Guardar en BD
         val savedReceta = recetaRepository.save(receta);
 
-        // 8. Mapear de vuelta a DTO de respuesta
         return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
     }
 
@@ -165,14 +157,10 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getFeed() {
-        // retornar todas las recetas en orden descendente con un limite de 20
         List<Receta> recetas = recetaRepository.findAll(Sort.by(Sort.Direction.DESC, "idReceta"));
         return recetaMapper.recetaToRecetaResponseDTO(recetas);
     }
 
-    /**
-     * Método auxiliar para crear la entidad Foto principal a partir de una URL.
-     */
     private Foto crearFotoPrincipal(String urlFoto, Receta receta) {
         Foto foto = new Foto();
         foto.setReceta(receta);

@@ -37,7 +37,6 @@ public class EmailService {
                     StandardCharsets.UTF_8.name()
             );
 
-            // Procesamos la plantilla Thymeleaf
             Context ctx = new Context();
             ctx.setVariables(variables);
             String html = templateEngine.process(templateName, ctx);
@@ -46,7 +45,6 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(html, true);
 
-            // Embebemos el logo desde resources/templates/assets/
             helper.addInline(
                     "logo",
                     new ClassPathResource("templates/assets/cookit-logo.png")

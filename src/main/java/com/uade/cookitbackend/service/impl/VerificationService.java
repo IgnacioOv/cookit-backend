@@ -34,7 +34,7 @@ public class VerificationService {
         emailService.sendHtmlMessage(
                 mail,
                 "Recuperación de contraseña",
-                "reset-password",  // procesará src/main/resources/templates/mail/reset-password.html
+                "reset-password",
                 Map.of(
                         "name", mail,
                         "code", code,
@@ -53,7 +53,7 @@ public class VerificationService {
         emailService.sendHtmlMessage(
                 mail,
                 "Verificación de correo electrónico",
-                "verification",   // procesará src/main/resources/templates/mail/verification.html
+                "verification",
                 Map.of(
                         "name", mail,
                         "code", code,
