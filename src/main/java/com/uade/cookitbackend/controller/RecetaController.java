@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import java.util.List;
 
 @RestController
@@ -64,9 +65,6 @@ public class RecetaController {
             @RequestParam String nombre
     ) {
         List<RecetaResponseDTO> recetas = recetaService.getRecetasByNombre(nombre);
-        if (recetas.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(recetas);
     }
 
@@ -95,9 +93,6 @@ public class RecetaController {
             @PathVariable Integer usuario
     ) {
         List<RecetaResponseDTO> recetas = recetaService.getRecetaByIdUsuario(usuario);
-        if (recetas.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(recetas);
     }
 
@@ -114,9 +109,6 @@ public class RecetaController {
     ) {
         List<RecetaResponseDTO> recetas =
                 recetaService.getRecetasWithoutIngrediente(ingrediente, orden);
-        if (recetas.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(recetas);
     }
 
@@ -133,9 +125,6 @@ public class RecetaController {
     ) {
         List<RecetaResponseDTO> recetas =
                 recetaService.getRecetasWithIngrediente(ingrediente, orden);
-        if (recetas.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(recetas);
     }
 
@@ -149,9 +138,6 @@ public class RecetaController {
     public ResponseEntity<List<RecetaResponseDTO>> getFeedByUser() {
         List<RecetaResponseDTO> recetas =
                 recetaService.getFeed();
-        if (recetas.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(recetas);
     }
 
@@ -213,26 +199,13 @@ public class RecetaController {
             @ApiResponse(responseCode = "404", description = "Receta no encontrada")
     })
     @GetMapping("/{id}/steps")
-    public ResponseEntity<StepsResponse> getStepsByRecetaId(
+    public ResponseEntity<List<PasoDto>> getStepsByRecetaId(
             @PathVariable Integer id
     ) {
-        RecetaResponseDTO receta = recetaService.getRecetaById(id);
-        return ResponseEntity.ok(new StepsResponse(receta.getPasos()));
-    }
-
-    public static class StepsResponse {
-        private List<PasoDto> steps;
-
-        public StepsResponse(List<PasoDto> steps) {
-            this.steps = steps;
-        }
-
-        public List<PasoDto> getSteps() {
-            return steps;
-        }
-
-        public void setSteps(List<PasoDto> steps) {
-            this.steps = steps;
-        }
+        // Usar el mapper para convertir correctamente los pasos a PasoDto
+        List<PasoDto> pasos = recetaService.getPasosByRecetaId(id).stream()
+                .map(com.uade.cookitbackend.service.mappers.PasoMapper.INSTANCE::toDto)
+                .toList();
+        return ResponseEntity.ok(pasos);
     }
 }

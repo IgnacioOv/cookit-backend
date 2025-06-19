@@ -2,6 +2,7 @@ package com.uade.cookitbackend.service;
 
 import com.uade.cookitbackend.dto.CreateRecetaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
+import com.uade.cookitbackend.entity.Paso;
 import com.uade.cookitbackend.entity.Receta;
 
 import java.util.List;
@@ -15,4 +16,5 @@ public interface RecetaService {
     List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden);
     RecetaResponseDTO getRecetaById(Integer id);
     List<RecetaResponseDTO> getFeed();
+    List<Paso> getPasosByRecetaId(Integer id);
 }

@@ -158,7 +158,10 @@ public class RecetaServiceImpl implements RecetaService {
     @Override
     public List<RecetaResponseDTO> getFeed() {
         List<Receta> recetas = recetaRepository.findAll(Sort.by(Sort.Direction.DESC, "idReceta"));
-        return recetaMapper.recetaToRecetaResponseDTO(recetas);
+        // Mapear manualmente usando el método individual para evitar ambigüedad
+        return recetas.stream()
+                .map(recetaMapper::recetaToRecetaResponseDTOSinPasos)
+                .collect(Collectors.toList());
     }
 
     private Foto crearFotoPrincipal(String urlFoto, Receta receta) {
@@ -176,5 +179,15 @@ public class RecetaServiceImpl implements RecetaService {
         }
         foto.setExtension(extension);
         return foto;
+    }
+
+    // Nuevo método para obtener solo los pasos de una receta
+    public List<Paso> getPasosByRecetaId(Integer id) {
+        Receta receta = recetaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.RECETA_NOT_FOUND,
+                        "Receta con ID " + id + " no encontrada."
+                ));
+        return receta.getPasos();
     }
 }
