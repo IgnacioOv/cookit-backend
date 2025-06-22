@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RecetaRepository extends JpaRepository<Receta, Integer> {
@@ -39,4 +40,11 @@ public interface RecetaRepository extends JpaRepository<Receta, Integer> {
     List<Receta> findRecetasConIngrediente(
             @Param("nombre") String nombre, Sort sort
     );
+
+    @Query("SELECT r FROM Receta r " +
+           "LEFT JOIN FETCH r.ingredientesUtilizados iu " +
+           "LEFT JOIN FETCH iu.ingrediente " +
+           "LEFT JOIN FETCH iu.unidad " +
+           "WHERE r.idReceta = :idReceta")
+    Optional<Receta> findByIdWithIngredientes(@Param("idReceta") Integer idReceta);
 }
