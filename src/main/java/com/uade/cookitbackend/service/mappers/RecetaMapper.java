@@ -24,6 +24,11 @@ public interface RecetaMapper {
     @Mapping(source = "receta.tipoReceta.descripcion", target = "tipoRecetaDescripcion")
     @Mapping(source = "receta.ingredientesUtilizados", target = "ingredientesUtilizados")
     RecetaResponseDTO recetaToRecetaResponseDTO(Receta receta);
-    List<RecetaResponseDTO> recetaToRecetaResponseDTO(List<Receta> receta);
 
+    // Nuevo: mapeo sin pasos
+    @Mapping(source = "usuario.nickname", target = "usuarioNickname")
+    @Mapping(source = "tipoReceta.descripcion", target = "tipoRecetaDescripcion")
+    @Mapping(source = "ingredientesUtilizados", target = "ingredientesUtilizados")
+    @Mapping(target = "pasos", ignore = true)
+    RecetaResponseDTO recetaToRecetaResponseDTOSinPasos(Receta receta);
 }
