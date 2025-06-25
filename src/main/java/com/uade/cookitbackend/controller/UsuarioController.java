@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Usuario", description = "API para gestionar usuarios")
@@ -37,6 +38,7 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
     private final JwtUtil jwtUtil;
     private final VerificationService verificationService;
+    private final PasswordEncoder passwordEncoder;
 
     @Operation(summary = "Registro de un nuevo usuario")
     @ApiResponses(value = {
@@ -261,7 +263,7 @@ public class UsuarioController {
             );
         }
 
-        usuario.setPassword(dto.getNewPassword());
+        usuario.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         usuarioService.updateUsuario(usuario);
         verificationService.removeCode(dto.getMail());
         return ResponseEntity.ok().build();

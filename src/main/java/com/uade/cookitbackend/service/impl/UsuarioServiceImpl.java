@@ -9,6 +9,7 @@ import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
     private final VerificationService verificationService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -50,6 +52,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         Usuario usuario = usuarioMapper.toEntity(createUsuarioDTO);
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         try {
             usuarioRepository.saveAndFlush(usuario);
         } catch (DataIntegrityViolationException e) {
@@ -84,7 +87,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 )
         );
 
-        if (!usuario.getPassword().equals(password)) {
+        if (!passwordEncoder.matches(password, usuario.getPassword())) {
             throw new UnauthorizedException(
                     ErrorCode.INVALID_CREDENTIALS,
                     "Invalid credentials"
