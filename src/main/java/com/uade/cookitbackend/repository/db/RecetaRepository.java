@@ -89,4 +89,11 @@ public interface RecetaRepository extends JpaRepository<Receta, Integer> {
            "LEFT JOIN FETCH iu.unidad " +
            "WHERE ra.approved = true AND r.idReceta = :idReceta")
     Optional<Receta> findApprovedByIdWithIngredientes(@Param("idReceta") Integer idReceta);
+
+    @Query("SELECT r FROM Receta r JOIN RecetaApproval ra ON r.idReceta = ra.idReceta WHERE ra.approved = true AND r.tipoReceta.idTipo = :idTipo")
+    List<Receta> findApprovedByTipoReceta(@Param("idTipo") Integer idTipo, Sort sort);
+
+    boolean existsByNombreRecetaAndUsuario_IdUsuario(String nombreReceta, Integer idUsuario);
+
+    Optional<Receta> findByNombreRecetaAndUsuario_IdUsuario(String nombreReceta, Integer idUsuario);
 }

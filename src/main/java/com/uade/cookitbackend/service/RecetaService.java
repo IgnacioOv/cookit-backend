@@ -10,11 +10,17 @@ import java.util.UUID;
 
 public interface RecetaService {
     RecetaResponseDTO createReceta(CreateRecetaDTO createRecetaDTO);
+    RecetaResponseDTO createReceta(CreateRecetaDTO createRecetaDTO, Boolean reemplazar);
+    Boolean existsRecetaByNombreAndUsuario(String nombreReceta, Integer idUsuario);
     List<RecetaResponseDTO> getRecetasByNombre(String nombreReceta);
+    List<RecetaResponseDTO> getRecetasByTipo(Integer idTipo, String orden);
     List<RecetaResponseDTO> getRecetaByIdUsuario(Integer userId);
     List<RecetaResponseDTO> getRecetasWithoutIngrediente(String ingrediente, String orden);
     List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden);
     RecetaResponseDTO getRecetaById(Integer id);
     List<RecetaResponseDTO> getFeed();
     List<Paso> getPasosByRecetaId(Integer id);
+    void agregarAFavoritos(Integer idUsuario, Integer idReceta);
+    void quitarDeFavoritos(Integer idUsuario, Integer idReceta);
+    List<RecetaResponseDTO> getRecetasFavoritas(Integer idUsuario);
 }
