@@ -79,6 +79,10 @@ public class InscripcionCursoServiceImpl implements InscripcionCursoService {
         insc.setEstado("inscripto");
         insc.setMontoPagado(precioFinal);
         insc.setMontoReintegrado(null);
+        insc.setTipoPago("tarjeta_credito");
+        insc.setNumeroTransaccion("TXN-" + System.currentTimeMillis());
+        insc.setSaldoCuentaCorriente(BigDecimal.ZERO);
+        insc.setFacturaEnviada(false);
         insc = inscripcionRepo.save(insc);
 
         return inscripcionMapper.toDTO(insc);
@@ -114,6 +118,8 @@ public class InscripcionCursoServiceImpl implements InscripcionCursoService {
         // Simulación de reintegro a tarjeta o cuenta corriente
         insc.setEstado("baja");
         insc.setMontoReintegrado(montoReintegro);
+        insc.setFechaBaja(LocalDate.now());
+        insc.setMotivoBaja("Solicitud del alumno");
 
         // Devolver la vacante solo si la baja fue antes de iniciar
         if (diasRestantes >= 0) {

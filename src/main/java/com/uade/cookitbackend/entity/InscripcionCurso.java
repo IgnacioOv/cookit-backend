@@ -33,4 +33,22 @@ public class InscripcionCurso {
 
     @Column(name = "monto_reintegrado")
     private java.math.BigDecimal montoReintegrado;
+
+    @Column(name = "tipo_pago")
+    private String tipoPago; // tarjeta_credito, cuenta_corriente, efectivo_sede
+
+    @Column(name = "numero_transaccion")
+    private String numeroTransaccion;
+
+    @Column(name = "saldo_cuenta_corriente", precision = 12, scale = 2)
+    private java.math.BigDecimal saldoCuentaCorriente;
+
+    @Column(name = "factura_enviada")
+    private Boolean facturaEnviada = false;
+
+    @Column(name = "fecha_baja")
+    private LocalDate fechaBaja;
+
+    @Column(name = "motivo_baja")
+    private String motivoBaja;
 }

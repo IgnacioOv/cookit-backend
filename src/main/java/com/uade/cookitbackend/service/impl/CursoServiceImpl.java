@@ -129,4 +129,77 @@ public class CursoServiceImpl implements CursoService {
             return dto;
         }).collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional
+    public void registrarAsistenciaQR(AsistenciaQRRequestDTO dto) {
+        Alumno alumno = alumnoRepository.findById(dto.getIdAlumno())
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ALUMNO_NOT_FOUND, "Alumno no encontrado"));
+        CronogramaCurso cronograma = cronogramaCursoRepository.findById(dto.getIdCronograma())
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CRONOGRAMA_CURSO_NOT_FOUND, "Cronograma no encontrado"));
+
+        // Verificar que el alumno esté inscripto en el curso
+        boolean estaInscripto = asistenciaCursoRepository.existsByAlumno_IdAlumnoAndCronograma_IdCronograma(
+                dto.getIdAlumno(), dto.getIdCronograma());
+        
+        if (!estaInscripto) {
+            throw new BadRequestException(ErrorCode.ALUMNO_NOT_REGISTERED, "El alumno no está inscripto en este curso");
+        }
+
+        // Crear registro de asistencia (solo campos disponibles)
+        AsistenciaCurso asistencia = new AsistenciaCurso();
+        asistencia.setAlumno(alumno);
+        asistencia.setCronograma(cronograma);
+        asistencia.setFecha(LocalDate.now().atStartOfDay());
+        
+        asistenciaCursoRepository.save(asistencia);
+    }
+
+    @Override
+    public AsistenciaReportDTO getReporteAsistencia(Integer idAlumno, Integer idCronograma) {
+        List<AsistenciaCurso> asistencias = asistenciaCursoRepository
+                .findByAlumno_IdAlumnoAndCronograma_IdCronograma(idAlumno, idCronograma);
+        
+        if (asistencias.isEmpty()) {
+            throw new ResourceNotFoundException(ErrorCode.ALUMNO_NOT_REGISTERED, "No se encontraron registros de asistencia");
+        }
+
+        CronogramaCurso cronograma = asistencias.get(0).getCronograma();
+        
+        // Calcular métricas de asistencia
+        int totalClases = (int) java.time.temporal.ChronoUnit.DAYS.between(
+                cronograma.getFechaInicio(), cronograma.getFechaFin()) + 1;
+        int clasesAsistidas = asistencias.size(); // Cada registro es una asistencia
+        
+        BigDecimal porcentajeAsistencia = totalClases > 0 ? 
+                new BigDecimal(clasesAsistidas).multiply(new BigDecimal("100"))
+                        .divide(new BigDecimal(totalClases), 2, java.math.RoundingMode.HALF_UP) : 
+                BigDecimal.ZERO;
+        
+        boolean aprobado = porcentajeAsistencia.compareTo(new BigDecimal("75")) >= 0;
+        
+        String estado;
+        LocalDate hoy = LocalDate.now();
+        if (cronograma.getFechaFin().isBefore(hoy)) {
+            estado = aprobado ? "aprobado" : "desaprobado";
+        } else if (cronograma.getFechaInicio().isAfter(hoy)) {
+            estado = "no_iniciado";
+        } else {
+            estado = "en_curso";
+        }
+
+        AsistenciaReportDTO report = new AsistenciaReportDTO();
+        report.setIdAlumno(idAlumno);
+        report.setIdCronograma(idCronograma);
+        report.setNombreCurso(cronograma.getCurso().getDescripcion());
+        report.setFechaInicio(cronograma.getFechaInicio());
+        report.setFechaFin(cronograma.getFechaFin());
+        report.setTotalClases(totalClases);
+        report.setClasesAsistidas(clasesAsistidas);
+        report.setPorcentajeAsistencia(porcentajeAsistencia);
+        report.setAprobado(aprobado);
+        report.setEstado(estado);
+        
+        return report;
+    }
 }

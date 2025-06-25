@@ -11,4 +11,6 @@ public interface CursoService {
     void inscribirAlumnoACurso(CursoInscripcionRequestDTO dto);
     void darDeBajaDeCurso(BajaCursoRequestDTO dto);
     List<MisCursosResponseDTO> getCursosContratadosPorAlumno(Integer idAlumno);
+    void registrarAsistenciaQR(AsistenciaQRRequestDTO dto);
+    AsistenciaReportDTO getReporteAsistencia(Integer idAlumno, Integer idCronograma);
 }

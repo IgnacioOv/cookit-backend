@@ -42,4 +42,15 @@ public class CursoController {
     public ResponseEntity<List<MisCursosResponseDTO>> getMisCursos(@PathVariable Integer idAlumno) {
         return ResponseEntity.ok(cursoService.getCursosContratadosPorAlumno(idAlumno));
     }
+
+    @PostMapping("/asistencia/qr")
+    public ResponseEntity<String> registrarAsistenciaQR(@RequestBody AsistenciaQRRequestDTO dto) {
+        cursoService.registrarAsistenciaQR(dto);
+        return ResponseEntity.ok("Asistencia registrada correctamente");
+    }
+
+    @GetMapping("/asistencia/{idAlumno}/{idCronograma}")
+    public ResponseEntity<AsistenciaReportDTO> getReporteAsistencia(@PathVariable Integer idAlumno, @PathVariable Integer idCronograma) {
+        return ResponseEntity.ok(cursoService.getReporteAsistencia(idAlumno, idCronograma));
+    }
 }
