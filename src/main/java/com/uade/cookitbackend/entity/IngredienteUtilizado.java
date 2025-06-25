@@ -1,12 +1,21 @@
 package com.uade.cookitbackend.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"receta", "ingrediente", "unidad"})
 @Entity
 @Table(name = "utilizados")
 public class IngredienteUtilizado {
+    @EqualsAndHashCode.Include
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idUtilizado")

@@ -8,11 +8,15 @@ import com.uade.cookitbackend.entity.Paso;
 import com.uade.cookitbackend.entity.Receta;
 import com.uade.cookitbackend.entity.TipoReceta;
 import com.uade.cookitbackend.entity.Usuario;
+import com.uade.cookitbackend.exception.BadRequestException;
+import com.uade.cookitbackend.exception.DuplicateResourceException;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
 import com.uade.cookitbackend.repository.db.IngredienteRepository;
 import com.uade.cookitbackend.repository.db.RecetaRepository;
+import com.uade.cookitbackend.repository.db.RecetaFavoritaRepository;
 import com.uade.cookitbackend.repository.db.UnidadRepository;
+import com.uade.cookitbackend.entity.RecetaFavorita;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.impl.TipoRecetaServiceImpl;
@@ -33,7 +37,8 @@ import java.util.stream.Collectors;
 public class RecetaServiceImpl implements RecetaService {
 
     private final RecetaRepository recetaRepository;
-    private final RecetaMapper recetaMapper = RecetaMapper.INSTANCE;
+    private final RecetaFavoritaRepository recetaFavoritaRepository;
+    private final RecetaMapper recetaMapper;
     private final UsuarioService usuarioService;
     private final TipoRecetaServiceImpl tipoRecetaServiceImpl;
     private final IngredienteRepository ingredienteRepository;
@@ -106,7 +111,7 @@ public class RecetaServiceImpl implements RecetaService {
     @Override
     public List<RecetaResponseDTO> getRecetasByNombre(String nombreReceta) {
         List<Receta> recetas = recetaRepository
-                .findByNombreRecetaContainingIgnoreCaseOrderByIdRecetaDesc(nombreReceta);
+                .findApprovedByNombreRecetaContainingIgnoreCaseOrderByIdRecetaDesc(nombreReceta);
 
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
@@ -115,7 +120,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getRecetaByIdUsuario(Integer userId) {
-        List<Receta> recetas = recetaRepository.findRecetaByUsuario_IdUsuario(userId);
+        List<Receta> recetas = recetaRepository.findApprovedRecetaByUsuario_IdUsuario(userId);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -123,11 +128,13 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getRecetasWithoutIngrediente(String ingrediente, String orden) {
-        Sort sort = orden.equalsIgnoreCase("asc")
-                ? Sort.by(Sort.Direction.ASC, "idReceta")
-                : Sort.by(Sort.Direction.DESC, "idReceta");
+        Sort sort = "fecha".equalsIgnoreCase(orden) 
+                ? Sort.by(Sort.Direction.DESC, "idReceta")
+                : "usuario".equalsIgnoreCase(orden)
+                ? Sort.by(Sort.Direction.ASC, "usuario.nombreUsuario")
+                : Sort.by(Sort.Direction.ASC, "nombreReceta");
 
-        List<Receta> recetas = recetaRepository.findRecetasSinIngrediente(ingrediente, sort);
+        List<Receta> recetas = recetaRepository.findApprovedRecetasSinIngrediente(ingrediente, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -135,11 +142,13 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden) {
-        Sort sort = orden.equalsIgnoreCase("asc")
-                ? Sort.by(Sort.Direction.ASC, "idReceta")
-                : Sort.by(Sort.Direction.DESC, "idReceta");
+        Sort sort = "fecha".equalsIgnoreCase(orden) 
+                ? Sort.by(Sort.Direction.DESC, "idReceta")
+                : "usuario".equalsIgnoreCase(orden)
+                ? Sort.by(Sort.Direction.ASC, "usuario.nombreUsuario")
+                : Sort.by(Sort.Direction.ASC, "nombreReceta");
 
-        List<Receta> recetas = recetaRepository.findRecetasConIngrediente(ingrediente, sort);
+        List<Receta> recetas = recetaRepository.findApprovedRecetasConIngrediente(ingrediente, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -147,17 +156,17 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public RecetaResponseDTO getRecetaById(Integer id) {
-        Receta receta = recetaRepository.findById(id)
+        Receta receta = recetaRepository.findApprovedByIdWithIngredientes(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.RECETA_NOT_FOUND,
-                        "Receta con ID " + id + " no encontrada."
+                        "Receta con ID " + id + " no encontrada o no aprobada."
                 ));
         return recetaMapper.recetaToRecetaResponseDTO(receta);
     }
 
     @Override
     public List<RecetaResponseDTO> getFeed() {
-        List<Receta> recetas = recetaRepository.findAll(Sort.by(Sort.Direction.DESC, "idReceta"));
+        List<Receta> recetas = recetaRepository.findAllApproved();
         // Mapear manualmente usando el método individual para evitar ambigüedad
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTOSinPasos)
@@ -181,13 +190,111 @@ public class RecetaServiceImpl implements RecetaService {
         return foto;
     }
 
+    @Override
+    public RecetaResponseDTO createReceta(CreateRecetaDTO createRecetaDTO, Boolean reemplazar) {
+        // Verificar si existe receta duplicada
+        boolean exists = recetaRepository.existsByNombreRecetaAndUsuario_IdUsuario(
+                createRecetaDTO.getNombreReceta(), createRecetaDTO.getIdUsuario());
+        
+        if (exists && !reemplazar) {
+            throw new DuplicateResourceException(ErrorCode.DUPLICATE_RECIPE_NAME,
+                    "Ya existe una receta con el nombre '" + createRecetaDTO.getNombreReceta() + 
+                    "' para este usuario. Use reemplazar=true para sobrescribir.");
+        }
+        
+        if (exists && reemplazar) {
+            // Eliminar receta existente
+            Optional<Receta> recetaExistente = recetaRepository.findByNombreRecetaAndUsuario_IdUsuario(
+                    createRecetaDTO.getNombreReceta(), createRecetaDTO.getIdUsuario());
+            if (recetaExistente.isPresent()) {
+                recetaRepository.delete(recetaExistente.get());
+            }
+        }
+        
+        return createReceta(createRecetaDTO);
+    }
+
+    @Override
+    public Boolean existsRecetaByNombreAndUsuario(String nombreReceta, Integer idUsuario) {
+        return recetaRepository.existsByNombreRecetaAndUsuario_IdUsuario(nombreReceta, idUsuario);
+    }
+
+    @Override
+    public List<RecetaResponseDTO> getRecetasByTipo(Integer idTipo, String orden) {
+        Sort sort = "fecha".equalsIgnoreCase(orden) 
+                ? Sort.by(Sort.Direction.DESC, "idReceta")
+                : "usuario".equalsIgnoreCase(orden)
+                ? Sort.by(Sort.Direction.ASC, "usuario.nombreUsuario")
+                : Sort.by(Sort.Direction.ASC, "nombreReceta");
+
+        List<Receta> recetas = recetaRepository.findApprovedByTipoReceta(idTipo, sort);
+        return recetas.stream()
+                .map(recetaMapper::recetaToRecetaResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     // Nuevo método para obtener solo los pasos de una receta
     public List<Paso> getPasosByRecetaId(Integer id) {
-        Receta receta = recetaRepository.findById(id)
+        Receta receta = recetaRepository.findApprovedByIdWithIngredientes(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.RECETA_NOT_FOUND,
-                        "Receta con ID " + id + " no encontrada."
+                        "Receta con ID " + id + " no encontrada o no aprobada."
                 ));
         return receta.getPasos();
+    }
+
+    @Override
+    @Transactional
+    public void agregarAFavoritos(Integer idUsuario, Integer idReceta) {
+        // Verificar que la receta existe y está aprobada
+        Receta receta = recetaRepository.findApprovedByIdWithIngredientes(idReceta)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RECETA_NOT_FOUND, 
+                        "Receta no encontrada o no aprobada"));
+
+        // Verificar que el usuario existe
+        Usuario usuario = usuarioService.getUsuarioById(idUsuario);
+        if (usuario == null) {
+            throw new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND, "Usuario no encontrado");
+        }
+
+        // Verificar que no esté ya en favoritos
+        if (recetaFavoritaRepository.existsByUsuario_IdUsuarioAndReceta_IdReceta(idUsuario, idReceta)) {
+            throw new DuplicateResourceException(ErrorCode.DUPLICATE_FAVORITE, 
+                    "La receta ya está en favoritos del usuario");
+        }
+
+        // Verificar límite de 10 favoritos
+        long cantidadFavoritos = recetaFavoritaRepository.countByUsuario_IdUsuario(idUsuario);
+        if (cantidadFavoritos >= 10) {
+            throw new BadRequestException(ErrorCode.FAVORITES_LIMIT_EXCEEDED,
+                    "El usuario ya tiene el máximo de 10 recetas favoritas");
+        }
+
+        // Crear favorito
+        RecetaFavorita favorita = new RecetaFavorita();
+        favorita.setUsuario(usuario);
+        favorita.setReceta(receta);
+        recetaFavoritaRepository.save(favorita);
+    }
+
+    @Override
+    @Transactional
+    public void quitarDeFavoritos(Integer idUsuario, Integer idReceta) {
+        RecetaFavorita favorita = recetaFavoritaRepository
+                .findByUsuario_IdUsuarioAndReceta_IdReceta(idUsuario, idReceta)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.FAVORITE_NOT_FOUND, 
+                        "La receta no está en favoritos del usuario"));
+
+        recetaFavoritaRepository.delete(favorita);
+    }
+
+    @Override
+    public List<RecetaResponseDTO> getRecetasFavoritas(Integer idUsuario) {
+        List<RecetaFavorita> favoritas = recetaFavoritaRepository
+                .findByUsuario_IdUsuarioOrderByFechaAgregadaDesc(idUsuario);
+
+        return favoritas.stream()
+                .map(favorita -> recetaMapper.recetaToRecetaResponseDTO(favorita.getReceta()))
+                .collect(Collectors.toList());
     }
 }

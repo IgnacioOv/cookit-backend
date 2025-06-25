@@ -8,21 +8,23 @@ import com.uade.cookitbackend.entity.Paso;
 import com.uade.cookitbackend.entity.Receta;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-@Mapper(uses = {PasoMapper.class, IngredienteMapper.class})
-
+@Mapper(componentModel = "spring", uses = {PasoMapper.class, IngredienteMapper.class})
 public interface RecetaMapper {
 
-    RecetaMapper INSTANCE = Mappers.getMapper(RecetaMapper.class);
-
+    @Mapping(target = "usuario", ignore = true)
+    @Mapping(target = "tipoReceta", ignore = true)
+    @Mapping(target = "ingredientesUtilizados", ignore = true)
+    @Mapping(target = "pasos", ignore = true)
+    @Mapping(target = "fotos", ignore = true)
+    @Mapping(target = "calificaciones", ignore = true)
     Receta toEntity(CreateRecetaDTO createRecetaDTO);
 
-    @Mapping(source = "receta.usuario.nickname", target = "usuarioNickname")
-    @Mapping(source = "receta.tipoReceta.descripcion", target = "tipoRecetaDescripcion")
-    @Mapping(source = "receta.ingredientesUtilizados", target = "ingredientesUtilizados")
+    @Mapping(source = "usuario.nickname", target = "usuarioNickname")
+    @Mapping(source = "tipoReceta.descripcion", target = "tipoRecetaDescripcion")
+    @Mapping(source = "ingredientesUtilizados", target = "ingredientesUtilizados")
     RecetaResponseDTO recetaToRecetaResponseDTO(Receta receta);
 
     // Nuevo: mapeo sin pasos
