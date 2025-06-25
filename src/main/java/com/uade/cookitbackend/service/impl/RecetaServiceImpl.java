@@ -106,7 +106,7 @@ public class RecetaServiceImpl implements RecetaService {
     @Override
     public List<RecetaResponseDTO> getRecetasByNombre(String nombreReceta) {
         List<Receta> recetas = recetaRepository
-                .findByNombreRecetaContainingIgnoreCaseOrderByIdRecetaDesc(nombreReceta);
+                .findApprovedByNombreRecetaContainingIgnoreCaseOrderByIdRecetaDesc(nombreReceta);
 
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
@@ -115,7 +115,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getRecetaByIdUsuario(Integer userId) {
-        List<Receta> recetas = recetaRepository.findRecetaByUsuario_IdUsuario(userId);
+        List<Receta> recetas = recetaRepository.findApprovedRecetaByUsuario_IdUsuario(userId);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -127,7 +127,7 @@ public class RecetaServiceImpl implements RecetaService {
                 ? Sort.by(Sort.Direction.ASC, "idReceta")
                 : Sort.by(Sort.Direction.DESC, "idReceta");
 
-        List<Receta> recetas = recetaRepository.findRecetasSinIngrediente(ingrediente, sort);
+        List<Receta> recetas = recetaRepository.findApprovedRecetasSinIngrediente(ingrediente, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -139,7 +139,7 @@ public class RecetaServiceImpl implements RecetaService {
                 ? Sort.by(Sort.Direction.ASC, "idReceta")
                 : Sort.by(Sort.Direction.DESC, "idReceta");
 
-        List<Receta> recetas = recetaRepository.findRecetasConIngrediente(ingrediente, sort);
+        List<Receta> recetas = recetaRepository.findApprovedRecetasConIngrediente(ingrediente, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
                 .collect(Collectors.toList());
@@ -147,17 +147,17 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public RecetaResponseDTO getRecetaById(Integer id) {
-        Receta receta = recetaRepository.findById(id)
+        Receta receta = recetaRepository.findApprovedByIdWithIngredientes(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.RECETA_NOT_FOUND,
-                        "Receta con ID " + id + " no encontrada."
+                        "Receta con ID " + id + " no encontrada o no aprobada."
                 ));
         return recetaMapper.recetaToRecetaResponseDTO(receta);
     }
 
     @Override
     public List<RecetaResponseDTO> getFeed() {
-        List<Receta> recetas = recetaRepository.findAll(Sort.by(Sort.Direction.DESC, "idReceta"));
+        List<Receta> recetas = recetaRepository.findAllApproved();
         // Mapear manualmente usando el método individual para evitar ambigüedad
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTOSinPasos)
@@ -183,10 +183,10 @@ public class RecetaServiceImpl implements RecetaService {
 
     // Nuevo método para obtener solo los pasos de una receta
     public List<Paso> getPasosByRecetaId(Integer id) {
-        Receta receta = recetaRepository.findById(id)
+        Receta receta = recetaRepository.findApprovedByIdWithIngredientes(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.RECETA_NOT_FOUND,
-                        "Receta con ID " + id + " no encontrada."
+                        "Receta con ID " + id + " no encontrada o no aprobada."
                 ));
         return receta.getPasos();
     }

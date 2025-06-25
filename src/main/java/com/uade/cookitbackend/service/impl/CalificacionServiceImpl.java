@@ -80,9 +80,9 @@ public class CalificacionServiceImpl implements CalificacionService {
 
     @Override
     public List<CalificacionResponseDTO> obtenerCalificacionesPorReceta(Integer idReceta) {
-        return calificacionRepository.findByRecetaIdReceta(idReceta)
+        return calificacionRepository.findByRecetaIdRecetaWithApprovalStatus(idReceta)
                 .stream()
-                .map(this::mapToDTO)
+                .map(this::mapToDTOWithApprovalStatus)
                 .collect(Collectors.toList());
     }
 
@@ -103,6 +103,21 @@ public class CalificacionServiceImpl implements CalificacionService {
         dto.setNombreReceta(calificacion.getReceta().getNombreReceta());
         dto.setCalificacion(calificacion.getCalificacion());
         dto.setComentarios(calificacion.getComentarios());
+        return dto;
+    }
+
+    private CalificacionResponseDTO mapToDTOWithApprovalStatus(Object[] result) {
+        Calificacion calificacion = (Calificacion) result[0];
+        String comentariosAprobados = (String) result[1];
+        
+        CalificacionResponseDTO dto = new CalificacionResponseDTO();
+        dto.setId(calificacion.getIdCalificacion());
+        dto.setIdUsuario(calificacion.getUsuario().getIdUsuario());
+        dto.setNombreUsuario(calificacion.getUsuario().getNombre());
+        dto.setIdReceta(calificacion.getReceta().getIdReceta());
+        dto.setNombreReceta(calificacion.getReceta().getNombreReceta());
+        dto.setCalificacion(calificacion.getCalificacion());
+        dto.setComentarios(comentariosAprobados); // Only approved comments are shown
         return dto;
     }
 }
