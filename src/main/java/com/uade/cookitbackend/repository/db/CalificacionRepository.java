@@ -14,9 +14,24 @@ public interface CalificacionRepository extends JpaRepository<Calificacion, Inte
     List<Calificacion> findByRecetaIdReceta(Integer idReceta);
     Optional<Calificacion> findByUsuarioIdUsuarioAndRecetaIdReceta(Integer idUsuario, Integer idReceta);
 
-    @Query("SELECT c FROM Calificacion c JOIN CalificacionApproval ca ON c.idCalificacion = ca.idCalificacion WHERE ca.approved = true AND c.receta.idReceta = :idReceta")
+    @Query("SELECT c FROM Calificacion c " +
+           "JOIN CalificacionApproval ca ON c.idCalificacion = ca.idCalificacion " +
+           "LEFT JOIN FETCH c.usuario " +
+           "LEFT JOIN FETCH c.receta " +
+           "WHERE ca.approved = true AND c.receta.idReceta = :idReceta")
     List<Calificacion> findApprovedByRecetaIdReceta(@Param("idReceta") Integer idReceta);
 
-    @Query("SELECT c, CASE WHEN ca.approved = true THEN c.comentarios ELSE null END as comentariosAprobados FROM Calificacion c LEFT JOIN CalificacionApproval ca ON c.idCalificacion = ca.idCalificacion WHERE c.receta.idReceta = :idReceta")
+    @Query("SELECT c, CASE WHEN ca.approved = true THEN c.comentarios ELSE null END as comentariosAprobados " +
+           "FROM Calificacion c " +
+           "LEFT JOIN CalificacionApproval ca ON c.idCalificacion = ca.idCalificacion " +
+           "LEFT JOIN FETCH c.usuario " +
+           "LEFT JOIN FETCH c.receta " +
+           "WHERE c.receta.idReceta = :idReceta")
     List<Object[]> findByRecetaIdRecetaWithApprovalStatus(@Param("idReceta") Integer idReceta);
+
+    @Query("SELECT c FROM Calificacion c " +
+           "LEFT JOIN FETCH c.usuario " +
+           "LEFT JOIN FETCH c.receta " +
+           "WHERE c.receta.idReceta = :idReceta")
+    List<Calificacion> findByRecetaIdRecetaWithFetch(@Param("idReceta") Integer idReceta);
 }

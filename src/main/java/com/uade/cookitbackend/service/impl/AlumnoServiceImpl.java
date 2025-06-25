@@ -13,7 +13,7 @@ import com.uade.cookitbackend.repository.db.AlumnoRepository;
 import com.uade.cookitbackend.service.AlumnoService;
 import com.uade.cookitbackend.service.mappers.AlumnoMapper;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +39,7 @@ public class AlumnoServiceImpl implements AlumnoService {
         return alumnoMapper.toResponseDTO(alumno);
     }
     @Override
+    @Transactional(readOnly = true)
     public AlumnoResponseDTO getAlumnoById(Integer id) {
         Alumno alumno = alumnoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND,
@@ -47,6 +48,7 @@ public class AlumnoServiceImpl implements AlumnoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AlumnoResponseDTO> getAllAlumnos() {
         List<Alumno> alumnos = alumnoRepository.findAll();
         return alumnos.stream()
@@ -55,6 +57,7 @@ public class AlumnoServiceImpl implements AlumnoService {
     }
 
     @Override
+    @Transactional
     public AlumnoResponseDTO updateAlumno(Integer id, AlumnoUpdateDTO dto) {
         Alumno alumno = alumnoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND,
@@ -65,6 +68,7 @@ public class AlumnoServiceImpl implements AlumnoService {
     }
 
     @Override
+    @Transactional
     public void deleteAlumno(Integer id) {
         if (!alumnoRepository.existsById(id)) {
             throw new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND,

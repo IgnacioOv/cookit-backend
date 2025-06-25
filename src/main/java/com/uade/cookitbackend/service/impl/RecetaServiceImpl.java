@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class RecetaServiceImpl implements RecetaService {
 
     private final RecetaRepository recetaRepository;
-    private final RecetaMapper recetaMapper = RecetaMapper.INSTANCE;
+    private final RecetaMapper recetaMapper;
     private final UsuarioService usuarioService;
     private final TipoRecetaServiceImpl tipoRecetaServiceImpl;
     private final IngredienteRepository ingredienteRepository;

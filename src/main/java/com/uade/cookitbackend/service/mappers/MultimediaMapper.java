@@ -4,14 +4,12 @@ import com.uade.cookitbackend.dto.MultimediaDTO;
 import com.uade.cookitbackend.entity.Multimedia;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface MultimediaMapper {
-
-    MultimediaMapper INSTANCE = Mappers.getMapper(MultimediaMapper.class);
 
     @Mapping(target = "idPaso", source = "paso.idPaso")
     MultimediaDTO toDto(Multimedia multimedia);
+    @Mapping(target = "paso", ignore = true)
     Multimedia toEntity(MultimediaDTO multimediaDTO);
 }

@@ -6,6 +6,7 @@ import com.uade.cookitbackend.dto.RecetaAjustadaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.RecetaCalculadoraService;
+import com.uade.cookitbackend.service.mappers.PasoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,6 +33,7 @@ public class RecetaController {
 
     private final RecetaService recetaService;
     private final RecetaCalculadoraService recetaCalculadoraService;
+    private final PasoMapper pasoMapper;
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Crear una nueva receta")
@@ -207,7 +209,7 @@ public class RecetaController {
     ) {
         // Usar el mapper para convertir correctamente los pasos a PasoDto
         List<PasoDto> pasos = recetaService.getPasosByRecetaId(id).stream()
-                .map(com.uade.cookitbackend.service.mappers.PasoMapper.INSTANCE::toDto)
+                .map(pasoMapper::toDto)
                 .toList();
         return ResponseEntity.ok(pasos);
     }
