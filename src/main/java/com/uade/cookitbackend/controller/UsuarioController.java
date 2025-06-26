@@ -40,15 +40,30 @@ public class UsuarioController {
     private final VerificationService verificationService;
     private final PasswordEncoder passwordEncoder;
 
-    @Operation(summary = "Registro de un nuevo usuario")
+    @Operation(
+        summary = "Registro completo de usuario (método legacy)",
+        description = """
+            Crea un usuario completo en un solo paso. Este endpoint es para compatibilidad con versiones anteriores.
+            
+            **⚠️ Método legacy - Se recomienda usar el flujo de 3 etapas:**
+            1. `/register/stage1` - Enviar email y nickname
+            2. `/register/check-code` - Verificar código de email
+            3. `/register/stage2` - Completar datos y crear usuario
+            
+            **Este endpoint:**
+            - Crea el usuario completo inmediatamente
+            - Envía código de verificación por email automáticamente
+            - Requiere que el usuario verifique su email posteriormente
+            """
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente",
+            @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente - Token JWT generado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserSessionResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos",
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos o malformados",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "409", description = "Email duplicado",
+            @ApiResponse(responseCode = "409", description = "Email o nickname ya existe en el sistema",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class)))
     })
@@ -73,18 +88,39 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "Login de usuario")
+    @Operation(
+        summary = "Autenticar usuario en el sistema",
+        description = """
+            Autentica un usuario registrado usando email y contraseña.
+            
+            **Flujo de autenticación:**
+            1. Valida credenciales (email + password)
+            2. Verifica que el usuario esté habilitado
+            3. Genera token JWT con validez de 24 horas
+            4. Crea sesión activa con token FCM (opcional)
+            
+            **El token JWT incluye:**
+            - ID del usuario
+            - Email del usuario
+            - Tiempo de expiración (24h)
+            
+            **Usar el token en requests posteriores:**
+            ```
+            Authorization: Bearer <token>
+            ```
+            """
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login exitoso",
+            @ApiResponse(responseCode = "200", description = "Autenticación exitosa - Token JWT generado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserSessionResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos",
+            @ApiResponse(responseCode = "400", description = "Formato de datos incorrecto o campos faltantes",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "404", description = "Usuario no encontrado",
+            @ApiResponse(responseCode = "404", description = "No existe usuario con ese email",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "401", description = "Credenciales inválidas",
+            @ApiResponse(responseCode = "401", description = "Contraseña incorrecta o usuario no habilitado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class)))
     })
@@ -186,10 +222,34 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Solicitar código de recuperación de contraseña")
+    @Operation(
+        summary = "🔐 Solicitar recuperación de contraseña",
+        description = """
+            Inicia el proceso de recuperación de contraseña enviando un código de verificación por email.
+            
+            **🔄 Flujo de recuperación de contraseña:**
+            ```
+            1. [AQUÍ] /reset-password → Solicitar código
+            2. /reset-password/check-code → Verificar código
+            3a. /reset-password/confirm → Solo cambiar contraseña
+            3b. /reset-password/complete → Cambiar contraseña + completar datos
+            ```
+            
+            **📨 Proceso:**
+            1. Verifica que el email esté registrado
+            2. Genera código de 6 dígitos
+            3. Envía email con el código
+            4. El código expira en 24 horas
+            
+            **💡 Casos de uso:**
+            - Usuario olvidó su contraseña
+            - Usuario registrado parcialmente (stage 1 completado pero no stage 2)
+            - Usuario necesita actualizar datos faltantes
+            """
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Código generado y enviado"),
-            @ApiResponse(responseCode = "404", description = "Usuario no encontrado",
+            @ApiResponse(responseCode = "200", description = "✅ Código de recuperación enviado por email"),
+            @ApiResponse(responseCode = "404", description = "❌ No existe usuario registrado con ese email",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class)))
     })
@@ -319,15 +379,40 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Primera etapa del registro - Verificación de email y alias")
+    @Operation(
+        summary = "📧 Etapa 1: Iniciar registro con email y nickname",
+        description = """
+            **Primera etapa del registro en 3 pasos** - Inicia el proceso de registro verificando email y nickname únicos.
+            
+            **📋 Flujo completo de registro:**
+            ```
+            1. [AQUÍ] /register/stage1 → Enviar email y nickname
+            2. /register/check-code → Verificar código de 6 dígitos
+            3. /register/stage2 → Completar datos y generar token
+            ```
+            
+            **🔍 Validaciones:**
+            - Email único en el sistema
+            - Nickname único (3-100 caracteres)
+            - Formato de email válido
+            
+            **📨 Proceso:**
+            1. Crea usuario temporal (habilitado=No)
+            2. Genera código de verificación de 6 dígitos
+            3. Envía email con el código
+            4. El código expira en 24 horas
+            
+            **⏭️ Siguiente paso:** Usar `/register/check-code` con el código recibido
+            """
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Código de verificación enviado",
+            @ApiResponse(responseCode = "200", description = "✅ Usuario temporal creado - Código de verificación enviado por email",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = RegisterStage1ResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos",
+            @ApiResponse(responseCode = "400", description = "❌ Datos de entrada inválidos (email malformado, nickname muy corto, etc.)",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "409", description = "Email o nickname duplicado",
+            @ApiResponse(responseCode = "409", description = "⚠️ Email o nickname ya existe - Incluye sugerencias de nicknames alternativos",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class)))
     })
@@ -354,10 +439,35 @@ public class UsuarioController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Verificar código de registro")
+    @Operation(
+        summary = "✅ Etapa 2: Verificar código de registro",
+        description = """
+            **Segunda etapa del registro en 3 pasos** - Verifica el código de 6 dígitos enviado por email.
+            
+            **📋 Flujo completo de registro:**
+            ```
+            1. /register/stage1 → ✅ Completado
+            2. [AQUÍ] /register/check-code → Verificar código de 6 dígitos
+            3. /register/stage2 → Completar datos y generar token
+            ```
+            
+            **🔐 Proceso de verificación:**
+            1. Valida el código de 6 dígitos
+            2. Verifica que no haya expirado (24h límite)
+            3. Habilita el usuario temporalmente (habilitado=Si)
+            4. Limpia el código de verificación del sistema
+            
+            **⚠️ Importante:**
+            - El código solo se puede usar una vez
+            - Después de verificar, tienes tiempo limitado para completar el Stage 2
+            - Si el código expira, debes volver a Stage 1
+            
+            **⏭️ Siguiente paso:** Usar `/register/stage2` para completar datos del usuario
+            """
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Código válido"),
-            @ApiResponse(responseCode = "401", description = "Código inválido o expirado",
+            @ApiResponse(responseCode = "200", description = "✅ Código verificado correctamente - Usuario habilitado para completar registro"),
+            @ApiResponse(responseCode = "401", description = "❌ Código inválido, expirado o ya utilizado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class)))
     })
@@ -374,15 +484,43 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Segunda etapa del registro - Completar datos y crear usuario")
+    @Operation(
+        summary = "🎯 Etapa 3: Completar registro y generar sesión",
+        description = """
+            **Tercera y última etapa del registro en 3 pasos** - Completa los datos del usuario y genera token de sesión.
+            
+            **📋 Flujo completo de registro:**
+            ```
+            1. /register/stage1 → ✅ Completado  
+            2. /register/check-code → ✅ Completado
+            3. [AQUÍ] /register/stage2 → Completar datos y generar token
+            ```
+            
+            **👤 Datos requeridos:**
+            - Password (8-30 caracteres)
+            - Nombre completo
+            - Dirección (opcional)
+            - Avatar URL (opcional)
+            - Token FCM para notificaciones (opcional)
+            
+            **🔐 Proceso final:**
+            1. Verifica que el usuario esté habilitado (stage 2 completado)
+            2. Encripta y guarda la contraseña
+            3. Completa todos los datos del perfil
+            4. Genera token JWT con validez de 24 horas
+            5. Crea sesión activa (si se proporciona FCM token)
+            
+            **🎉 Resultado:** Usuario completamente registrado y autenticado
+            """
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente",
+            @ApiResponse(responseCode = "201", description = "🎉 Registro completado exitosamente - Usuario creado y autenticado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserSessionResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos",
+            @ApiResponse(responseCode = "400", description = "❌ Datos inválidos (contraseña muy corta, email incorrecto, etc.)",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "401", description = "Código no validado previamente",
+            @ApiResponse(responseCode = "401", description = "⚠️ Código de verificación no validado - Debe completar Stage 2 primero",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class)))
     })
