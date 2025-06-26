@@ -8,6 +8,7 @@ import java.util.List;
 public interface CursoService {
     List<CursoResponseDTO> getAllCursosDisponibles();
     List<CursoResponseDTO> getCursosBySede(Integer idSede);
+    CursoResponseDTO getCursoById(Integer idCurso);
     void inscribirAlumnoACurso(CursoInscripcionRequestDTO dto);
     void darDeBajaDeCurso(BajaCursoRequestDTO dto);
     List<MisCursosResponseDTO> getCursosContratadosPorAlumno(Integer idAlumno);

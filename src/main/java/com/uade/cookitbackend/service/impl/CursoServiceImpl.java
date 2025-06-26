@@ -49,6 +49,16 @@ public class CursoServiceImpl implements CursoService {
     }
 
     @Override
+    public CursoResponseDTO getCursoById(Integer idCurso) {
+        Curso curso = cursoRepository.findById(idCurso)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.USUARIO_NOT_FOUND,
+                        "Curso no encontrado con ID: " + idCurso
+                ));
+        return cursoMapper.toDTO(curso);
+    }
+
+    @Override
     @Transactional
     public void inscribirAlumnoACurso(CursoInscripcionRequestDTO dto) {
         Alumno alumno = alumnoRepository.findById(dto.getIdAlumno())

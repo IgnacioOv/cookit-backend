@@ -40,7 +40,6 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     private EstadoHabilitado habilitado;
 
-    @NotBlank
     @Size(max = 150)
     @Column(length = 150)
     private String nombre;

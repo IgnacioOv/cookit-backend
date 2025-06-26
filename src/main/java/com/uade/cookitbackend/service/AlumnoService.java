@@ -4,6 +4,7 @@ package com.uade.cookitbackend.service;
 import com.uade.cookitbackend.dto.AlumnoResponseDTO;
 import com.uade.cookitbackend.dto.AlumnoUpdateDTO;
 import com.uade.cookitbackend.dto.AlumnoWithUsuarioDTO;
+import com.uade.cookitbackend.dto.UsuarioToAlumnoConversionDTO;
 
 import java.util.List;
 
@@ -13,4 +14,7 @@ public interface AlumnoService {
     List<AlumnoResponseDTO> getAllAlumnos();
     AlumnoResponseDTO updateAlumno(Integer id,AlumnoUpdateDTO dto);
     void deleteAlumno(Integer id);
+    
+    // Método para convertir usuario existente a alumno
+    AlumnoResponseDTO convertUsuarioToAlumno(Integer userId, UsuarioToAlumnoConversionDTO dto);
 }

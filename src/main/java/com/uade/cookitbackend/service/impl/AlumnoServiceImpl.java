@@ -5,8 +5,10 @@ import com.uade.cookitbackend.dto.AlumnoResponseDTO;
 import com.uade.cookitbackend.dto.AlumnoUpdateDTO;
 import com.uade.cookitbackend.dto.AlumnoWithUsuarioDTO;
 import com.uade.cookitbackend.dto.CreateUsuarioDTO;
+import com.uade.cookitbackend.dto.UsuarioToAlumnoConversionDTO;
 import com.uade.cookitbackend.entity.Alumno;
 import com.uade.cookitbackend.entity.Usuario;
+import com.uade.cookitbackend.exception.DuplicateResourceException;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
 import com.uade.cookitbackend.repository.db.AlumnoRepository;
@@ -75,5 +77,32 @@ public class AlumnoServiceImpl implements AlumnoService {
                     "Alumno not found with id: " + id);
         }
         alumnoRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public AlumnoResponseDTO convertUsuarioToAlumno(Integer userId, UsuarioToAlumnoConversionDTO dto) {
+        // Verificar que el usuario existe
+        Usuario usuario = usuarioService.getUsuarioById(userId);
+        
+        // Verificar que el usuario no sea ya un alumno
+        if (alumnoRepository.existsById(userId)) {
+            throw new DuplicateResourceException(
+                    ErrorCode.DUPLICATE_RESOURCE,
+                    "El usuario ya es alumno"
+            );
+        }
+
+        // Crear nuevo alumno usando el usuario existente
+        Alumno alumno = new Alumno();
+        alumno.setUsuario(usuario);
+        alumno.setNumeroTarjeta(dto.getNumeroTarjeta());
+        alumno.setDniFrente(dto.getDniFrente());
+        alumno.setDniFondo(dto.getDniFondo());
+        alumno.setTramite(dto.getTramite());
+        alumno.setCuentaCorriente(java.math.BigDecimal.ZERO); // Inicializar en 0
+
+        alumno = alumnoRepository.save(alumno);
+        return alumnoMapper.toResponseDTO(alumno);
     }
 }

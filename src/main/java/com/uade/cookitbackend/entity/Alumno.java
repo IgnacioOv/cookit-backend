@@ -13,7 +13,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString(exclude = {"asistencias", "inscripciones"})
+@ToString(exclude = {"asistencias"})
 @Entity
 @Table(name = "alumnos")
 public class Alumno {

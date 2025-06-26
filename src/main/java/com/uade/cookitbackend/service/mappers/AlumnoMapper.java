@@ -11,6 +11,8 @@ public interface AlumnoMapper {
     AlumnoResponseDTO toResponseDTO(Alumno alumno);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "usuario", ignore = true)
+    @Mapping(target = "asistencias", ignore = true)
     void updateEntityFromDTO(AlumnoUpdateDTO dto, @MappingTarget Alumno alumno);
 
     default Alumno toEntityFromComposedDTO(com.uade.cookitbackend.dto.AlumnoWithUsuarioDTO dto, Usuario usuario) {
