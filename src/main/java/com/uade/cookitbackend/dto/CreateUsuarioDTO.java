@@ -26,7 +26,7 @@ public class CreateUsuarioDTO {
 
     @Schema(description = "User's password", example = "password123")
     @NotBlank(message = "Password is required")
-    @Size(max = 40, message = "Password must not exceed 40 characters")
+    @Size(min = 8, max = 30, message = "Password must be between 8 and 30 characters")
     private String password;
 
     @JsonIgnore

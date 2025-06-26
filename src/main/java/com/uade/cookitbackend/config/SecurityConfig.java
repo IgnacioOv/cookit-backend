@@ -35,12 +35,17 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/users/login",
                                 "/api/users/register",
+                                "/api/users/register/stage1",
+                                "/api/users/register/check-code",
+                                "/api/users/register/stage2",
                                 "/api/media",
                                 "/api/alumnos/register-full",
                                 "/api/users/reset-password",
                                 "/api/users/reset-password/check-code",
                                 "/api/users/reset-password/confirm",
+                                "/api/users/reset-password/complete",
                                 "/api/users/mail-verify/confirm",
+                                "/api/public/**", // Endpoints públicos para visitantes
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
@@ -53,7 +58,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new CustomPasswordEncoder();
     }
 
     @Bean

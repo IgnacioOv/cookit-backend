@@ -3,8 +3,13 @@ package com.uade.cookitbackend.controller;
 import com.uade.cookitbackend.dto.AlumnoResponseDTO;
 import com.uade.cookitbackend.dto.AlumnoUpdateDTO;
 import com.uade.cookitbackend.dto.AlumnoWithUsuarioDTO;
+import com.uade.cookitbackend.dto.UsuarioToAlumnoConversionDTO;
+import com.uade.cookitbackend.config.JwtUtil;
+import com.uade.cookitbackend.exception.ErrorCode;
+import com.uade.cookitbackend.exception.UnauthorizedException;
 import com.uade.cookitbackend.service.AlumnoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -25,6 +30,7 @@ import java.util.List;
 public class AlumnoController {
 
     private final AlumnoService alumnoService;
+    private final JwtUtil jwtUtil;
 
     @Operation(
             summary = "Registro compuesto de Usuario y Alumno",
@@ -165,5 +171,68 @@ public class AlumnoController {
     ) {
         alumnoService.deleteAlumno(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+            summary = "Convertir usuario autenticado a alumno",
+            description = "Convierte el usuario actualmente autenticado en alumno, agregando los datos específicos requeridos."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Usuario convertido a alumno exitosamente",
+                    content = @Content(schema = @Schema(implementation = AlumnoResponseDTO.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Usuario ya es alumno o datos inválidos",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Token inválido o ausente",
+                    content = @Content
+            )
+    })
+    @PostMapping("/convert")
+    public ResponseEntity<AlumnoResponseDTO> convertToAlumno(
+            @RequestHeader("Authorization") String authHeader,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Datos específicos para convertirse en alumno",
+                    required = true,
+                    content = @Content(
+                            schema = @Schema(implementation = UsuarioToAlumnoConversionDTO.class),
+                            examples = @ExampleObject(value = """
+                        {
+                          "numeroTarjeta": "123456789012",
+                          "dniFrente": "https://cloudinary.com/dni-frente.jpg",
+                          "dniFondo": "https://cloudinary.com/dni-fondo.jpg",
+                          "tramite": "12345678901"
+                        }
+                        """)
+                    )
+            )
+            @Valid @RequestBody UsuarioToAlumnoConversionDTO dto
+    ) {
+        // Extraer usuario del token JWT
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Authorization header missing or invalid"
+            );
+        }
+        
+        String token = authHeader.replace("Bearer ", "");
+        Integer userId = jwtUtil.extractUserId(token);
+        if (userId == null) {
+            throw new UnauthorizedException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Invalid token"
+            );
+        }
+
+        AlumnoResponseDTO response = alumnoService.convertUsuarioToAlumno(userId, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
