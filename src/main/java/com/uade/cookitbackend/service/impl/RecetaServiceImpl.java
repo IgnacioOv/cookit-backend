@@ -2,31 +2,25 @@ package com.uade.cookitbackend.service.impl;
 
 import com.uade.cookitbackend.dto.CreateRecetaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
-import com.uade.cookitbackend.entity.Foto;
-import com.uade.cookitbackend.entity.IngredienteUtilizado;
-import com.uade.cookitbackend.entity.Paso;
-import com.uade.cookitbackend.entity.Receta;
-import com.uade.cookitbackend.entity.TipoReceta;
-import com.uade.cookitbackend.entity.Usuario;
+import com.uade.cookitbackend.entity.*;
 import com.uade.cookitbackend.exception.BadRequestException;
 import com.uade.cookitbackend.exception.DuplicateResourceException;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
-import com.uade.cookitbackend.repository.db.IngredienteRepository;
-import com.uade.cookitbackend.repository.db.RecetaRepository;
-import com.uade.cookitbackend.repository.db.RecetaFavoritaRepository;
-import com.uade.cookitbackend.repository.db.RecetaApprovalRepository;
-import com.uade.cookitbackend.repository.db.UnidadRepository;
-import com.uade.cookitbackend.entity.RecetaFavorita;
-import com.uade.cookitbackend.entity.RecetaApproval;
+import com.uade.cookitbackend.repository.db.*;
+import com.uade.cookitbackend.repository.notification.NotificationRepository;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.impl.TipoRecetaServiceImpl;
 import com.uade.cookitbackend.service.mappers.RecetaMapper;
+import com.uade.cookitbackend.utils.SessionUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecetaServiceImpl implements RecetaService {
@@ -46,6 +41,8 @@ public class RecetaServiceImpl implements RecetaService {
     private final TipoRecetaServiceImpl tipoRecetaServiceImpl;
     private final IngredienteRepository ingredienteRepository;
     private final UnidadRepository unidadRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserSessionRepository userSessionRepository;
 
     @Override
     @Transactional
@@ -333,5 +330,16 @@ public class RecetaServiceImpl implements RecetaService {
         
         approval.setApproved(true);
         recetaApprovalRepository.save(approval);
+        try{ UsernamePasswordAuthenticationToken userauth = SessionUtils.getCurrenteUser(UsernamePasswordAuthenticationToken.class);
+            User user = (User) userauth.getPrincipal(); // Esto es para obtener el usuario autenticado, si es necesario
+            Usuario usuarioToSendNot= usuarioService.getUsuarioByMail(user.getUsername());
+            UserSession lastSesion= userSessionRepository.findLastUserSessionByUser(usuarioToSendNot).getFirst();
+
+            notificationRepository.sendNotification(lastSesion.getFmc(),
+                    "Receta aprobada",
+                    "La receta  ha sido aprobada por el administrador.");;
+        } catch (Exception e){
+            log.error("Error al enviar notificación de aprobación de receta: " + e.getMessage());
+        }
     }
 }
