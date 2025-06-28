@@ -38,4 +38,23 @@ public class RegisterStage2DTO {
     @Size(max = 30, message = "El token FCM no puede exceder los 30 caracteres")
     @Schema(description = "Token FCM para notificaciones push (opcional)")
     private String fcm;
+
+    @Schema(description = "Indica si el usuario se registra como alumno", example = "true")
+    private Boolean esAlumno = false;
+
+    @Size(max = 12, message = "El número de tarjeta no puede exceder los 12 caracteres")
+    @Schema(description = "Número de tarjeta del alumno (requerido si esAlumno es true)", example = "123456789012")
+    private String numeroTarjeta;
+
+    @Size(max = 300, message = "La URL del DNI frente no puede exceder los 300 caracteres")
+    @Schema(description = "URL de la imagen del DNI frente (requerido si esAlumno es true)")
+    private String dniFrente;
+
+    @Size(max = 300, message = "La URL del DNI fondo no puede exceder los 300 caracteres")
+    @Schema(description = "URL de la imagen del DNI fondo (requerido si esAlumno es true)")
+    private String dniFondo;
+
+    @Size(max = 12, message = "El número de trámite no puede exceder los 12 caracteres")
+    @Schema(description = "Número de trámite del DNI (requerido si esAlumno es true)", example = "123456789012")
+    private String tramite;
 }

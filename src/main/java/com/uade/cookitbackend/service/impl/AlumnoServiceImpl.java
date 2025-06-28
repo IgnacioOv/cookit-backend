@@ -44,8 +44,10 @@ public class AlumnoServiceImpl implements AlumnoService {
     @Transactional(readOnly = true)
     public AlumnoResponseDTO getAlumnoById(Integer id) {
         Alumno alumno = alumnoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND,
-                        "Alumno not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.ALUMNO_NOT_FOUND,
+                        "Alumno no encontrado con id: " + id
+                ));
         return alumnoMapper.toResponseDTO(alumno);
     }
 
@@ -62,8 +64,10 @@ public class AlumnoServiceImpl implements AlumnoService {
     @Transactional
     public AlumnoResponseDTO updateAlumno(Integer id, AlumnoUpdateDTO dto) {
         Alumno alumno = alumnoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND,
-                        "Alumno not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.ALUMNO_NOT_FOUND,
+                        "Alumno no encontrado con id: " + id
+                ));
         alumnoMapper.updateEntityFromDTO(dto, alumno);
         alumno = alumnoRepository.save(alumno);
         return alumnoMapper.toResponseDTO(alumno);
@@ -73,8 +77,10 @@ public class AlumnoServiceImpl implements AlumnoService {
     @Transactional
     public void deleteAlumno(Integer id) {
         if (!alumnoRepository.existsById(id)) {
-            throw new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND,
-                    "Alumno not found with id: " + id);
+            throw new ResourceNotFoundException(
+                    ErrorCode.ALUMNO_NOT_FOUND,
+                    "Alumno no encontrado con id: " + id
+            );
         }
         alumnoRepository.deleteById(id);
     }
@@ -88,8 +94,8 @@ public class AlumnoServiceImpl implements AlumnoService {
         // Verificar que el usuario no sea ya un alumno
         if (alumnoRepository.existsById(userId)) {
             throw new DuplicateResourceException(
-                    ErrorCode.DUPLICATE_RESOURCE,
-                    "El usuario ya es alumno"
+                    ErrorCode.ALUMNO_ALREADY_REGISTERED,
+                    "El usuario ya está registrado como alumno"
             );
         }
 

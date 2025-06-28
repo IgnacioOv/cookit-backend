@@ -4,9 +4,11 @@ import com.uade.cookitbackend.dto.CreateUsuarioDTO;
 import com.uade.cookitbackend.dto.PasswordResetCompleteDTO;
 import com.uade.cookitbackend.dto.RegisterStage1DTO;
 import com.uade.cookitbackend.dto.RegisterStage2DTO;
+import com.uade.cookitbackend.entity.Alumno;
 import com.uade.cookitbackend.entity.Usuario;
 import com.uade.cookitbackend.enums.EstadoHabilitado;
 import com.uade.cookitbackend.exception.*;
+import com.uade.cookitbackend.repository.db.AlumnoRepository;
 import com.uade.cookitbackend.repository.db.UsuarioRepository;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final AlumnoRepository alumnoRepository;
     private final UsuarioMapper usuarioMapper;
     private final VerificationService verificationService;
     private final PasswordEncoder passwordEncoder;
@@ -176,7 +179,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         );
 
         if (usuario.getHabilitado() == EstadoHabilitado.Si) {
-            throw new ValidationException("El usuario ya está habilitado");
+            throw new BadRequestException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "El usuario ya está habilitado"
+            );
         }
 
         // Validar código
@@ -218,12 +224,17 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setAvatar(registerStage2DTO.getAvatar());
 
         try {
-            usuarioRepository.saveAndFlush(usuario);
+            usuario = usuarioRepository.saveAndFlush(usuario);
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateResourceException(
                     ErrorCode.DUPLICATE_RESOURCE,
                     "Error al actualizar el usuario"
             );
+        }
+
+        // Si el usuario se registra como alumno, crear el registro de alumno
+        if (registerStage2DTO.getEsAlumno() != null && registerStage2DTO.getEsAlumno()) {
+            createAlumnoForUser(usuario, registerStage2DTO);
         }
 
         return usuario;
@@ -262,7 +273,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         if (!isUserIncomplete(dto.getMail())) {
-            throw new ValidationException(
+            throw new BadRequestException(
+                    ErrorCode.VALIDATION_FAILED,
                     "El usuario ya tiene todos los datos completos. Use el reset de password normal."
             );
         }
@@ -283,6 +295,52 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         return usuario;
+    }
+
+    private void createAlumnoForUser(Usuario usuario, RegisterStage2DTO registerStage2DTO) {
+        // Validar que se proporcionen los campos requeridos para alumno
+        if (registerStage2DTO.getNumeroTarjeta() == null || registerStage2DTO.getNumeroTarjeta().trim().isEmpty()) {
+            throw new BadRequestException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "El número de tarjeta es obligatorio para registrarse como alumno"
+            );
+        }
+        if (registerStage2DTO.getDniFrente() == null || registerStage2DTO.getDniFrente().trim().isEmpty()) {
+            throw new BadRequestException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "La imagen del DNI frente es obligatoria para registrarse como alumno"
+            );
+        }
+        if (registerStage2DTO.getDniFondo() == null || registerStage2DTO.getDniFondo().trim().isEmpty()) {
+            throw new BadRequestException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "La imagen del DNI fondo es obligatoria para registrarse como alumno"
+            );
+        }
+        if (registerStage2DTO.getTramite() == null || registerStage2DTO.getTramite().trim().isEmpty()) {
+            throw new BadRequestException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "El número de trámite es obligatorio para registrarse como alumno"
+            );
+        }
+
+        // Crear el alumno
+        Alumno alumno = new Alumno();
+        alumno.setUsuario(usuario);
+        alumno.setNumeroTarjeta(registerStage2DTO.getNumeroTarjeta());
+        alumno.setDniFrente(registerStage2DTO.getDniFrente());
+        alumno.setDniFondo(registerStage2DTO.getDniFondo());
+        alumno.setTramite(registerStage2DTO.getTramite());
+        alumno.setCuentaCorriente(java.math.BigDecimal.ZERO);
+
+        try {
+            alumnoRepository.save(alumno);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateResourceException(
+                    ErrorCode.ALUMNO_ALREADY_REGISTERED,
+                    "El usuario ya está registrado como alumno"
+            );
+        }
     }
 
     private List<String> sugerirNicknames(String base) {
