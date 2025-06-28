@@ -23,4 +23,6 @@ public interface RecetaService {
     void agregarAFavoritos(Integer idUsuario, Integer idReceta);
     void quitarDeFavoritos(Integer idUsuario, Integer idReceta);
     List<RecetaResponseDTO> getRecetasFavoritas(Integer idUsuario);
+    List<RecetaResponseDTO> getRecetasNoAprobadas();
+    void aprobarReceta(Integer idReceta);
 }
