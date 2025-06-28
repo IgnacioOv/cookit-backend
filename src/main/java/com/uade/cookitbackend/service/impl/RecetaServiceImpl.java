@@ -15,8 +15,10 @@ import com.uade.cookitbackend.exception.ResourceNotFoundException;
 import com.uade.cookitbackend.repository.db.IngredienteRepository;
 import com.uade.cookitbackend.repository.db.RecetaRepository;
 import com.uade.cookitbackend.repository.db.RecetaFavoritaRepository;
+import com.uade.cookitbackend.repository.db.RecetaApprovalRepository;
 import com.uade.cookitbackend.repository.db.UnidadRepository;
 import com.uade.cookitbackend.entity.RecetaFavorita;
+import com.uade.cookitbackend.entity.RecetaApproval;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.impl.TipoRecetaServiceImpl;
@@ -38,6 +40,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     private final RecetaRepository recetaRepository;
     private final RecetaFavoritaRepository recetaFavoritaRepository;
+    private final RecetaApprovalRepository recetaApprovalRepository;
     private final RecetaMapper recetaMapper;
     private final UsuarioService usuarioService;
     private final TipoRecetaServiceImpl tipoRecetaServiceImpl;
@@ -104,6 +107,12 @@ public class RecetaServiceImpl implements RecetaService {
         }
 
         val savedReceta = recetaRepository.save(receta);
+
+        // Crear entrada en RecetaApproval con approved = false
+        RecetaApproval recetaApproval = new RecetaApproval();
+        recetaApproval.setReceta(savedReceta);
+        recetaApproval.setApproved(false);
+        recetaApprovalRepository.save(recetaApproval);
 
         return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
     }
@@ -296,5 +305,33 @@ public class RecetaServiceImpl implements RecetaService {
         return favoritas.stream()
                 .map(favorita -> recetaMapper.recetaToRecetaResponseDTO(favorita.getReceta()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<RecetaResponseDTO> getRecetasNoAprobadas() {
+        List<RecetaApproval> recetasNoAprobadas = recetaApprovalRepository.findUnapprovedRecetas();
+        return recetasNoAprobadas.stream()
+                .map(approval -> recetaMapper.recetaToRecetaResponseDTO(approval.getReceta()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void aprobarReceta(Integer idReceta) {
+        RecetaApproval approval = recetaApprovalRepository.findById(idReceta)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.RECETA_NOT_FOUND,
+                        "Receta con ID " + idReceta + " no encontrada."
+                ));
+        
+        if (approval.getApproved()) {
+            throw new BadRequestException(
+                    ErrorCode.RECETA_ALREADY_APPROVED,
+                    "La receta con ID " + idReceta + " ya está aprobada."
+            );
+        }
+        
+        approval.setApproved(true);
+        recetaApprovalRepository.save(approval);
     }
 }

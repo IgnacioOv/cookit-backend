@@ -605,4 +605,76 @@ public class RecetaController {
     ) {
         return ResponseEntity.ok(recetaCalculadoraService.ajustarPorIngrediente(id, idIngrediente, cantidad, idUnidad));
     }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Obtener lista de recetas no aprobadas",
+        description = """
+            Obtiene todas las recetas que están pendientes de aprobación por parte de la empresa.
+            
+            **Acceso:** Solo para administradores o personal autorizado
+            
+            **Características:**
+            - Lista recetas en estado no aprobado (approved = false)
+            - Incluye información completa del usuario creador
+            - Ordenadas por fecha de creación (más recientes primero)
+            - Útil para procesos de moderación de contenido
+            
+            **Casos de uso:**
+            - Moderación de contenido
+            - Control de calidad de recetas
+            - Proceso de aprobación empresarial
+            - Auditoría de contenido pendiente
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de recetas no aprobadas (puede estar vacía)",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado - solo para administradores")
+    })
+    @GetMapping("/unapproved")
+    public ResponseEntity<List<RecetaResponseDTO>> getRecetasNoAprobadas() {
+        List<RecetaResponseDTO> recetas = recetaService.getRecetasNoAprobadas();
+        return ResponseEntity.ok(recetas);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Aprobar una receta",
+        description = """
+            Marca una receta como aprobada, haciéndola visible públicamente en la aplicación.
+            
+            **Acceso:** Solo para administradores o personal autorizado
+            
+            **Proceso:**
+            - Cambia el estado de la receta a aprobada (approved = true)
+            - La receta se vuelve visible en búsquedas y feeds públicos
+            - Proceso irreversible (una vez aprobada, no se puede desaprobar)
+            
+            **Validaciones:**
+            - La receta debe existir
+            - La receta no debe estar ya aprobada
+            - Solo personal autorizado puede aprobar
+            
+            **Casos de uso:**
+            - Proceso de moderación completado
+            - Control de calidad aprobado
+            - Publicación oficial de contenido
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Receta aprobada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "La receta ya está aprobada"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado - solo para administradores"),
+            @ApiResponse(responseCode = "404", description = "Receta no encontrada")
+    })
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<String> aprobarReceta(
+            @Parameter(description = "ID de la receta a aprobar", example = "123")
+            @PathVariable Integer id
+    ) {
+        recetaService.aprobarReceta(id);
+        return ResponseEntity.ok("Receta aprobada exitosamente");
+    }
 }
