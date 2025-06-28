@@ -1,5 +1,6 @@
 package com.uade.cookitbackend.controller;
 
+import com.uade.cookitbackend.dto.CreateIngredienteDTO;
 import com.uade.cookitbackend.dto.IngredienteNombreDto;
 import com.uade.cookitbackend.service.IngredienteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,7 +11,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -99,5 +102,44 @@ public class IngredienteController {
                 .map(i -> new IngredienteNombreDto(i.getIdIngrediente(), i.getNombre()))
                 .toList();
         return ResponseEntity.ok(ingredientes);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Crear un nuevo ingrediente",
+        description = """
+            Crea un nuevo ingrediente en el sistema.
+            
+            **Características:**
+            - Valida que el nombre no exista previamente (insensible a mayúsculas/minúsculas)
+            - Normaliza el nombre eliminando espacios extra
+            - Devuelve el ingrediente creado con su ID asignado
+            - Requiere autenticación
+            
+            **Validaciones:**
+            - Nombre obligatorio y único
+            - Máximo 200 caracteres
+            - No puede estar vacío o solo espacios
+            
+            **Casos de uso:**
+            - Agregar ingredientes faltantes al catálogo
+            - Expandir la base de datos de ingredientes
+            - Permitir que usuarios sugieran nuevos ingredientes
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Ingrediente creado exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = IngredienteNombreDto.class))),
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente"),
+            @ApiResponse(responseCode = "409", description = "Ya existe un ingrediente con ese nombre")
+    })
+    @PostMapping
+    public ResponseEntity<IngredienteNombreDto> createIngrediente(
+            @Valid @RequestBody CreateIngredienteDTO createIngredienteDTO
+    ) {
+        IngredienteNombreDto ingredienteCreado = ingredienteService.createIngrediente(createIngredienteDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ingredienteCreado);
     }
 }
