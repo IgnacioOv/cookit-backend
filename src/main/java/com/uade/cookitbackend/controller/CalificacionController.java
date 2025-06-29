@@ -179,4 +179,61 @@ public class CalificacionController {
     public ResponseEntity<List<CalificacionResponseDTO>> obtenerTodasLasCalificaciones() {
         return ResponseEntity.ok(calificacionService.obtenerTodasLasCalificaciones());
     }
+
+    @Operation(
+        summary = "Obtener calificaciones no aprobadas",
+        description = """
+            Obtiene todas las calificaciones que tienen comentarios pendientes de aprobación.
+            
+            **Contenido devuelto:**
+            - Calificaciones con comentarios no aprobados
+            - Información del usuario y receta
+            - Comentarios pendientes de moderación
+            - Puntajes asociados
+            
+            **Casos de uso:**
+            - Moderación de comentarios por parte de administradores
+            - Revisión de contenido antes de publicación
+            - Gestión de calidad de comentarios
+            - Control de contenido inapropiado
+            
+            **Nota:** Esta función está restringida a administradores
+            """
+    )
+    @GetMapping("/no-aprobadas")
+    public ResponseEntity<List<CalificacionResponseDTO>> obtenerCalificacionesNoAprobadas() {
+        return ResponseEntity.ok(calificacionService.obtenerCalificacionesNoAprobadas());
+    }
+
+    @Operation(
+        summary = "Aprobar una calificación",
+        description = """
+            Aprueba una calificación específica, haciendo visible su comentario públicamente.
+            
+            **Proceso:**
+            - Cambia el estado de la calificación a aprobada
+            - El comentario se vuelve visible para todos los usuarios
+            - La calificación aparece en las reseñas de la receta
+            - Se notifica al usuario (opcional)
+            
+            **Validaciones:**
+            - Solo administradores pueden aprobar calificaciones
+            - La calificación debe existir y estar pendiente
+            - No se puede aprobar una calificación ya aprobada
+            
+            **Casos de uso:**
+            - Moderación de comentarios
+            - Control de calidad de contenido
+            - Publicación de reseñas válidas
+            - Gestión de comunidad
+            """
+    )
+    @PutMapping("/{id}/aprobar")
+    @ApiResponse(responseCode = "200", description = "Calificación aprobada exitosamente")
+    @ApiResponse(responseCode = "404", description = "Calificación no encontrada")
+    public ResponseEntity<Void> aprobarCalificacion(
+            @Parameter(description = "ID de la calificación a aprobar") @PathVariable Integer id) {
+        calificacionService.aprobarCalificacion(id);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -7,6 +7,7 @@ import com.uade.cookitbackend.exception.ApiError;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
 import com.uade.cookitbackend.exception.UnauthorizedException;
+import com.uade.cookitbackend.service.AlumnoService;
 import com.uade.cookitbackend.service.SessionService;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.config.JwtUtil;
@@ -36,6 +37,7 @@ public class UsuarioController {
     private final SessionService sessionService;
     private final UsuarioMapper usuarioMapper;
     private final UsuarioService usuarioService;
+    private final AlumnoService alumnoService;
     private final JwtUtil jwtUtil;
     private final VerificationService verificationService;
     private final PasswordEncoder passwordEncoder;
@@ -145,6 +147,7 @@ public class UsuarioController {
         UserSessionResponse response = new UserSessionResponse();
         response.setToken(token);
         response.setTtl("86400");
+        response.setIsAlumno(alumnoService.isUsuarioAlumno(usuario.getIdUsuario()));
         return ResponseEntity.ok(response);
     }
 

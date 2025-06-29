@@ -17,4 +17,7 @@ public interface AlumnoService {
     
     // Método para convertir usuario existente a alumno
     AlumnoResponseDTO convertUsuarioToAlumno(Integer userId, UsuarioToAlumnoConversionDTO dto);
+    
+    // Método para verificar si un usuario es alumno
+    boolean isUsuarioAlumno(Integer userId);
 }

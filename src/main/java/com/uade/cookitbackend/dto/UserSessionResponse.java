@@ -7,4 +7,5 @@ public class UserSessionResponse {
     String token;
     String refreshToken;
     String ttl;
+    Boolean isAlumno;
 }
