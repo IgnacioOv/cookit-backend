@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface InscripcionCursoService {
     InscripcionCursoResponseDTO inscribirAlumno(InscripcionCursoRequestDTO dto);
-    InscripcionCursoResponseDTO darDeBaja(Integer idInscripcion);
+    InscripcionCursoResponseDTO darDeBaja(Integer idInscripcion, Boolean reintegroEnCuentaCorriente);
     List<InscripcionCursoResponseDTO> getInscripcionesAlumno(Integer idAlumno);
     InscripcionCursoResponseDTO getInscripcionById(Integer idInscripcion);
 }
