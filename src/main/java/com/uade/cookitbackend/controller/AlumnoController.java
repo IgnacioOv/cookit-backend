@@ -2,7 +2,6 @@ package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.AlumnoResponseDTO;
 import com.uade.cookitbackend.dto.AlumnoUpdateDTO;
-import com.uade.cookitbackend.dto.AlumnoWithUsuarioDTO;
 import com.uade.cookitbackend.dto.UsuarioToAlumnoConversionDTO;
 import com.uade.cookitbackend.config.JwtUtil;
 import com.uade.cookitbackend.exception.ErrorCode;
@@ -31,67 +30,6 @@ public class AlumnoController {
 
     private final AlumnoService alumnoService;
     private final JwtUtil jwtUtil;
-
-    @Operation(
-            summary = "Registro compuesto de Usuario y Alumno",
-            description = "Registra un nuevo usuario y alumno en un solo paso. Si el usuario ya existe, se rechaza la operación.",
-            tags = {"alumno-controller"}
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Usuario y alumno creados exitosamente",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = AlumnoResponseDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Datos inválidos o usuario/alumno existente",
-                    content = @Content(
-                            mediaType = "application/json"
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Conflicto por email o nickname duplicado",
-                    content = @Content(
-                            mediaType = "application/json"
-                    )
-            )
-    })
-    @PostMapping("/register-full")
-    public ResponseEntity<AlumnoResponseDTO> registerAlumnoWithUsuario(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Datos para crear usuario y alumno en un solo paso",
-                    required = true,
-                    content = @Content(
-                            schema = @Schema(implementation = AlumnoWithUsuarioDTO.class),
-                            examples = @ExampleObject(value = """
-                        {
-                          "mail": "user@example.com",
-                          "nickname": "johndoe",
-                          "password": "password123",
-                          "nombre": "Juan Perez",
-                          "direccion": "Calle Falsa 123",
-                          "avatar": "https://example.com/avatar.jpg",
-                          "fcm": "asdlkj123",
-                          "numeroTarjeta": "123456789012",
-                          "dniFrente": "url/dni_frente.png",
-                          "dniFondo": "url/dni_fondo.png",
-                          "tramite": "9876543210",
-                          "cuentaCorriente": 0.00
-                        }
-                        """)
-                    )
-            )
-            @Valid @RequestBody AlumnoWithUsuarioDTO dto
-    ) {
-        AlumnoResponseDTO response = alumnoService.createAlumnoWithUsuario(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
 
     @Operation(
             summary = "Obtener un alumno por ID",

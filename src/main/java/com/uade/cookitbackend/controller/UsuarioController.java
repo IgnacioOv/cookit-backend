@@ -43,54 +43,6 @@ public class UsuarioController {
     private final PasswordEncoder passwordEncoder;
 
     @Operation(
-        summary = "Registro completo de usuario (método legacy)",
-        description = """
-            Crea un usuario completo en un solo paso. Este endpoint es para compatibilidad con versiones anteriores.
-            
-            **⚠️ Método legacy - Se recomienda usar el flujo de 3 etapas:**
-            1. `/register/stage1` - Enviar email y nickname
-            2. `/register/check-code` - Verificar código de email
-            3. `/register/stage2` - Completar datos y crear usuario
-            
-            **Este endpoint:**
-            - Crea el usuario completo inmediatamente
-            - Envía código de verificación por email automáticamente
-            - Requiere que el usuario verifique su email posteriormente
-            """
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente - Token JWT generado",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserSessionResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos o malformados",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "409", description = "Email o nickname ya existe en el sistema",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ApiError.class)))
-    })
-    @PostMapping(
-            path = "/register",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<UserSessionResponse> register(
-            @Valid @RequestBody CreateUsuarioDTO createUsuarioDTO
-    ) {
-        Usuario createdUsuario = usuarioService.createUsuario(createUsuarioDTO);
-        String token = jwtUtil.generateToken(
-                createdUsuario.getIdUsuario(),
-                createdUsuario.getMail()
-        );
-        sessionService.newSession(createUsuarioDTO.getFcm(), createdUsuario);
-
-        UserSessionResponse response = new UserSessionResponse();
-        response.setToken(token);
-        response.setTtl("86400"); // 1 día en segundos
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @Operation(
         summary = "Autenticar usuario en el sistema",
         description = """
             Autentica un usuario registrado usando email y contraseña.
@@ -189,40 +141,6 @@ public class UsuarioController {
         Usuario usuario = usuarioService.getUsuarioById(userId);
         UserProfileResponseDTO response = usuarioMapper.toUserProfileResponseDTO(usuario);
         return ResponseEntity.ok(response);
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Configurar datos del usuario (mock, sin lógica interna)")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Configuración guardada"),
-            @ApiResponse(responseCode = "401", description = "Token inválido",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ApiError.class)))
-    })
-    @PostMapping(
-            path = "/config",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<Void> setUserConfig(
-            @RequestHeader("Authorization") String authHeader,
-            @RequestBody UserConfig config
-    ) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException(
-                    ErrorCode.UNAUTHORIZED,
-                    "Authorization header missing or invalid"
-            );
-        }
-        String token = authHeader.replace("Bearer ", "");
-        Integer userId = jwtUtil.extractUserId(token);
-        if (userId == null) {
-            throw new UnauthorizedException(
-                    ErrorCode.UNAUTHORIZED,
-                    "Invalid token"
-            );
-        }
-
-        return ResponseEntity.ok().build();
     }
 
     @Operation(
@@ -341,42 +259,6 @@ public class UsuarioController {
         }
 
         usuario.setPassword(passwordEncoder.encode(dto.getNewPassword()));
-        usuarioService.updateUsuario(usuario);
-        verificationService.removeCode(dto.getMail());
-        return ResponseEntity.ok().build();
-    }
-
-    @Operation(summary = "Confirmar verificación de mail")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Mail verificado"),
-            @ApiResponse(responseCode = "401", description = "Código inválido",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "404", description = "Usuario no encontrado",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ApiError.class)))
-    })
-    @PostMapping("/mail-verify/confirm")
-    public ResponseEntity<Void> confirmVerifyMail(
-            @Valid @RequestBody VerifyMailConfirmDTO dto
-    ) {
-        boolean valid = verificationService.validateCode(dto.getMail(), dto.getCode());
-        if (!valid) {
-            throw new UnauthorizedException(
-                    ErrorCode.INVALID_VERIFICATION_CODE,
-                    "Código de verificación inválido o expirado"
-            );
-        }
-
-        Usuario usuario = usuarioService.getUsuarioByMail(dto.getMail());
-        if (usuario == null) {
-            throw new ResourceNotFoundException(
-                    ErrorCode.USUARIO_NOT_FOUND,
-                    "Usuario no encontrado con email: " + dto.getMail()
-            );
-        }
-
-        usuario.setHabilitado(EstadoHabilitado.Si);
         usuarioService.updateUsuario(usuario);
         verificationService.removeCode(dto.getMail());
         return ResponseEntity.ok().build();
