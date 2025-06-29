@@ -381,7 +381,7 @@ public class RecetaController {
     }
 
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Obtener feed del usuario (mock de ejemplo)")
+    @Operation(summary = "Obtener feed")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Feed obtenido exitosamente"),
             @ApiResponse(responseCode = "404", description = "No se encontró feed")
@@ -391,27 +391,6 @@ public class RecetaController {
         List<RecetaResponseDTO> recetas =
                 recetaService.getFeed();
         return ResponseEntity.ok(recetas);
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Buscar con filtros paginados (mock de ejemplo)")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Resultados obtenidos"),
-            @ApiResponse(responseCode = "404", description = "No se encontraron resultados")
-    })
-    @GetMapping("/search-with-filters")
-    public ResponseEntity<List<RecetaResponseDTO>> searchWithFilters(
-            @RequestHeader("Authorization") String token,
-            @RequestParam(name = "page", defaultValue = "0") Integer page,
-            @RequestParam(name = "size", defaultValue = "5") Integer size,
-            @RequestParam(
-                    name = "sort",
-                    defaultValue = "[{\"field\":\"receta\",\"direction\":\"desc\"}]"
-            ) String sort
-    ) {
-        RecetaResponseDTO mockReceta = new RecetaResponseDTO();
-        List<RecetaResponseDTO> mockedList = List.of(mockReceta);
-        return ResponseEntity.ok(mockedList);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -514,21 +493,6 @@ public class RecetaController {
     ) {
         FavoritoResponseDTO response = recetaService.quitarDeFavoritos(dto.getIdUsuario(), dto.getIdReceta());
         return ResponseEntity.ok(response);
-    }
-
-    @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Obtener recetas recientes del usuario (mock de ejemplo)")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Recetas recientes obtenidas"),
-            @ApiResponse(responseCode = "404", description = "No se encontraron recetas recientes")
-    })
-    @GetMapping("/recents/{id}")
-    public ResponseEntity<List<RecetaResponseDTO>> getRecentReceta(
-            @PathVariable Integer id
-    ) {
-        RecetaResponseDTO mockReceta = new RecetaResponseDTO();
-        List<RecetaResponseDTO> mockedList = List.of(mockReceta);
-        return ResponseEntity.ok(mockedList);
     }
 
     @SecurityRequirement(name = "bearerAuth")

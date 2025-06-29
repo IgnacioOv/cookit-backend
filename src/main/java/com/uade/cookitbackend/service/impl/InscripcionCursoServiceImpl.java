@@ -121,7 +121,7 @@ public class InscripcionCursoServiceImpl implements InscripcionCursoService {
             emailService.sendHtmlMessage(
                 alumno.getUsuario().getMail(),
                 "Confirmación de Inscripción - Pago Exitoso",
-                "mail/payment-success",
+                "payment-success",
                 variables
             );
         } catch (Exception e) {
