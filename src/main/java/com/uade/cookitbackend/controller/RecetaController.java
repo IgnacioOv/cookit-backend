@@ -1,6 +1,7 @@
 package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.*;
+import com.uade.cookitbackend.dto.UpdateRecetaDTO;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.RecetaCalculadoraService;
 import com.uade.cookitbackend.service.mappers.PasoMapper;
@@ -75,6 +76,55 @@ public class RecetaController {
     ) {
         RecetaResponseDTO createdReceta = recetaService.createReceta(createRecetaDTO, reemplazar);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReceta);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Editar una receta existente",
+        description = """
+            Permite al usuario editar una receta que le pertenece. La receta editada pasa automáticamente a estado no aprobado.
+            
+            **Características:**
+            - Solo el propietario de la receta puede editarla
+            - Usa el token Bearer para identificar al usuario
+            - Todos los campos son opcionales (se actualizan solo los proporcionados)
+            - La receta editada requiere nueva aprobación
+            - Se pueden actualizar: nombre, descripción, foto, porciones, tipo, ingredientes y pasos
+            
+            **Validaciones:**
+            - El usuario debe ser propietario de la receta
+            - La receta debe existir
+            - Los IDs de ingredientes, unidades y tipos deben ser válidos
+            
+            **Proceso post-edición:**
+            - La receta pasa a estado no aprobado (approved = false)
+            - Necesita nueva aprobación para ser visible públicamente
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Receta editada exitosamente - ahora pendiente de aprobación",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o usuario no autorizado"),
+            @ApiResponse(responseCode = "401", description = "Token no válido o expirado"),
+            @ApiResponse(responseCode = "404", description = "Receta no encontrada")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<RecetaResponseDTO> updateReceta(
+            @Parameter(description = "ID de la receta a editar", example = "123")
+            @PathVariable Integer id,
+            @Parameter(
+                    description = "Datos actualizados de la receta (todos los campos son opcionales)",
+                    required = true,
+                    schema = @Schema(implementation = UpdateRecetaDTO.class)
+            )
+            @Valid @RequestBody UpdateRecetaDTO updateRecetaDTO,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+        Integer userId = jwtUtil.extractUserId(token);
+        RecetaResponseDTO updatedReceta = recetaService.updateReceta(id, updateRecetaDTO, userId);
+        return ResponseEntity.ok(updatedReceta);
     }
 
     @SecurityRequirement(name = "bearerAuth")

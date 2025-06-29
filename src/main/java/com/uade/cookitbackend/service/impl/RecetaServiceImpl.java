@@ -1,6 +1,7 @@
 package com.uade.cookitbackend.service.impl;
 
 import com.uade.cookitbackend.dto.CreateRecetaDTO;
+import com.uade.cookitbackend.dto.UpdateRecetaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
 import com.uade.cookitbackend.entity.*;
 import com.uade.cookitbackend.exception.BadRequestException;
@@ -24,6 +25,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -218,6 +220,128 @@ public class RecetaServiceImpl implements RecetaService {
         }
 
         return createReceta(createRecetaDTO);
+    }
+
+    @Override
+    @Transactional
+    public RecetaResponseDTO updateReceta(Integer idReceta, UpdateRecetaDTO updateRecetaDTO, Integer idUsuario) {
+        // Buscar la receta existente
+        Receta receta = recetaRepository.findById(idReceta)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.RECETA_NOT_FOUND,
+                        "Receta con ID " + idReceta + " no encontrada."
+                ));
+
+        // Verificar que el usuario es el propietario de la receta
+        if (!receta.getUsuario().getIdUsuario().equals(idUsuario)) {
+            throw new BadRequestException(
+                    ErrorCode.UNAUTHORIZED_OPERATION,
+                    "No tienes permisos para editar esta receta."
+            );
+        }
+
+        // Actualizar campos básicos
+        if (updateRecetaDTO.getNombreReceta() != null) {
+            receta.setNombreReceta(updateRecetaDTO.getNombreReceta());
+        }
+        if (updateRecetaDTO.getDescripcionReceta() != null) {
+            receta.setDescripcionReceta(updateRecetaDTO.getDescripcionReceta());
+        }
+        if (updateRecetaDTO.getFotoPrincipal() != null) {
+            receta.setFotoPrincipal(updateRecetaDTO.getFotoPrincipal());
+        }
+        if (updateRecetaDTO.getPorciones() != null) {
+            receta.setPorciones(updateRecetaDTO.getPorciones());
+        }
+        if (updateRecetaDTO.getCantidadPersonas() != null) {
+            receta.setCantidadPersonas(updateRecetaDTO.getCantidadPersonas());
+        }
+
+        // Actualizar tipo de receta si se proporciona
+        if (updateRecetaDTO.getIdTipo() != null) {
+            TipoReceta tipoReceta = tipoRecetaServiceImpl.getTipoRecetaById(updateRecetaDTO.getIdTipo());
+            if (tipoReceta == null) {
+                throw new ResourceNotFoundException(
+                        ErrorCode.TIPO_RECETA_NOT_FOUND,
+                        "TipoReceta con ID " + updateRecetaDTO.getIdTipo() + " no encontrado."
+                );
+            }
+            receta.setTipoReceta(tipoReceta);
+        }
+
+        // Actualizar ingredientes utilizados
+        if (updateRecetaDTO.getIngredientesUtilizados() != null) {
+            // Crear nueva lista mutable de ingredientes
+            List<IngredienteUtilizado> ingredientesUtilizados = updateRecetaDTO.getIngredientesUtilizados().stream()
+                    .map(dto -> {
+                        IngredienteUtilizado iu = new IngredienteUtilizado();
+                        iu.setReceta(receta);
+                        iu.setCantidad(dto.getCantidad());
+                        iu.setObservaciones(dto.getObservaciones());
+
+                        if (dto.getIdIngrediente() != null) {
+                            ingredienteRepository.findById(dto.getIdIngrediente())
+                                    .ifPresent(iu::setIngrediente);
+                        }
+                        if (dto.getIdUnidad() != null) {
+                            unidadRepository.findById(dto.getIdUnidad())
+                                    .ifPresent(iu::setUnidad);
+                        }
+                        return iu;
+                    })
+                    .collect(Collectors.toList());
+            receta.setIngredientesUtilizados(new ArrayList<>(ingredientesUtilizados));
+        }
+
+        // Actualizar pasos
+        if (updateRecetaDTO.getPasos() != null) {
+            // Crear nueva lista mutable de pasos
+            List<Paso> pasos = updateRecetaDTO.getPasos().stream()
+                    .map(pasoDto -> {
+                        Paso paso = new Paso();
+                        paso.setReceta(receta);
+                        paso.setNumeroPaso(pasoDto.getNumeroPaso());
+                        paso.setTexto(pasoDto.getTexto());
+                        
+                        if (pasoDto.getMultimedia() != null) {
+                            List<Multimedia> multimedia = pasoDto.getMultimedia().stream()
+                                    .map(multimediaDto -> {
+                                        Multimedia m = new Multimedia();
+                                        m.setPaso(paso);
+                                        m.setUrlContenido(multimediaDto.getUrlContenido());
+                                        m.setExtension(multimediaDto.getExtension());
+                                        m.setTipoContenido(multimediaDto.getTipoContenido());
+                                        return m;
+                                    })
+                                    .collect(Collectors.toList());
+                            paso.setMultimedia(new ArrayList<>(multimedia));
+                        }
+                        return paso;
+                    })
+                    .collect(Collectors.toList());
+            receta.setPasos(new ArrayList<>(pasos));
+        }
+
+        // Actualizar foto principal si se proporciona
+        if (updateRecetaDTO.getFotoPrincipal() != null && !updateRecetaDTO.getFotoPrincipal().isEmpty()) {
+            // Crear nueva lista mutable de fotos
+            Foto foto = crearFotoPrincipal(updateRecetaDTO.getFotoPrincipal(), receta);
+            receta.setFotos(new ArrayList<>(List.of(foto)));
+        }
+
+        // Guardar la receta actualizada
+        val savedReceta = recetaRepository.save(receta);
+
+        // Marcar como no aprobada después de la edición
+        RecetaApproval approval = recetaApprovalRepository.findById(idReceta)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.RECETA_NOT_FOUND,
+                        "RecetaApproval con ID " + idReceta + " no encontrada."
+                ));
+        approval.setApproved(false);
+        recetaApprovalRepository.save(approval);
+
+        return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
     }
 
     @Override
