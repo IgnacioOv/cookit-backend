@@ -2,6 +2,7 @@ package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.*;
 import com.uade.cookitbackend.service.CursoService;
+import com.uade.cookitbackend.service.InscripcionCursoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,6 +25,44 @@ import java.util.List;
 public class CursoController {
 
     private final CursoService cursoService;
+    private final InscripcionCursoService inscripcionCursoService;
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Crear un nuevo curso",
+        description = """
+            Crea un nuevo curso en el sistema con toda la información requerida.
+            
+            **Información requerida:**
+            - Descripción del curso (máximo 300 caracteres)
+            - Contenidos temáticos (máximo 500 caracteres)
+            - Requerimientos y materiales (máximo 500 caracteres)
+            - Duración en horas
+            - Precio del curso
+            - Modalidad (PRESENCIAL, VIRTUAL, ONLINE)
+            
+            **Validaciones:**
+            - La descripción es obligatoria
+            - La duración debe ser un número positivo
+            - El precio debe ser un valor positivo
+            - La modalidad debe ser válida
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Curso creado exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CursoResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
+    })
+    @PostMapping
+    public ResponseEntity<CursoResponseDTO> createCurso(
+            @Parameter(description = "Datos del curso a crear", required = true)
+            @Valid @RequestBody CreateCursoDTO createCursoDTO
+    ) {
+        CursoResponseDTO curso = cursoService.createCurso(createCursoDTO);
+        return ResponseEntity.status(201).body(curso);
+    }
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
@@ -96,41 +135,46 @@ public class CursoController {
     @Operation(
         summary = "Inscribir alumno a un curso",
         description = """
-            Inscribe un alumno a un curso específico en una sede determinada.
+            Inscribe un alumno a un curso específico con opción de pago por cuenta corriente o tarjeta.
             
             **Proceso de inscripción:**
             1. Verifica disponibilidad de vacantes
-            2. Valida que el alumno esté habilitado
-            3. Procesa el pago con tarjeta de crédito registrada
+            2. Valida método de pago seleccionado
+            3. Procesa el pago (cuenta corriente o tarjeta mockeada)
             4. Confirma inscripción y envía email de confirmación
+            
+            **Métodos de pago:**
+            - **Cuenta Corriente**: Descuenta automáticamente del saldo del alumno
+            - **Tarjeta de Crédito**: Pago procesado desde el frontend (mockeado)
             
             **Validaciones:**
             - El curso debe tener vacantes disponibles
-            - El alumno debe tener tarjeta de crédito registrada
-            - No puede estar ya inscrito al mismo curso
-            - Debe cumplir requisitos previos si los hay
+            - Para cuenta corriente: saldo suficiente
+            - Para tarjeta: tarjeta registrada
+            - No puede estar ya inscrito al mismo cronograma
             
             **Resultado:**
-            - Pago procesado inmediatamente
-            - Email con datos del curso y factura
-            - Actualización de cuenta corriente del alumno
+            - Pago procesado según método seleccionado
+            - Email con confirmación y detalles del pago
+            - Actualización de saldo si usa cuenta corriente
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Inscripción exitosa - Email de confirmación enviado"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos o curso sin vacantes"),
-            @ApiResponse(responseCode = "402", description = "Error en el procesamiento del pago"),
-            @ApiResponse(responseCode = "404", description = "Curso, sede o alumno no encontrados"),
-            @ApiResponse(responseCode = "409", description = "El alumno ya está inscrito en este curso"),
+            @ApiResponse(responseCode = "201", description = "Inscripción exitosa - Email de confirmación enviado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InscripcionCursoResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos, saldo insuficiente o curso sin vacantes"),
+            @ApiResponse(responseCode = "404", description = "Cronograma o alumno no encontrados"),
+            @ApiResponse(responseCode = "409", description = "El alumno ya está inscrito en este cronograma"),
             @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
     })
     @PostMapping("/inscripcion")
-    public ResponseEntity<Void> inscribirAlumno(
-            @Parameter(description = "Datos de inscripción: IDs del alumno, curso y sede", required = true)
-            @Valid @RequestBody CursoInscripcionRequestDTO dto
+    public ResponseEntity<InscripcionCursoResponseDTO> inscribirAlumno(
+            @Parameter(description = "Datos de inscripción: ID del alumno, cronograma y método de pago", required = true)
+            @Valid @RequestBody InscripcionCursoRequestDTO dto
     ) {
-        cursoService.inscribirAlumnoACurso(dto);
-        return ResponseEntity.ok().build();
+        InscripcionCursoResponseDTO inscripcion = inscripcionCursoService.inscribirAlumno(dto);
+        return ResponseEntity.status(201).body(inscripcion);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -140,35 +184,38 @@ public class CursoController {
             Procesa la baja de un alumno de un curso con reintegro según la política de cancelación.
             
             **Política de reintegro:**
-            - **Más de 10 días hábiles antes**: 100% de reintegro gratuito
+            - **Más de 10 días antes**: 100% de reintegro
             - **Entre 9 y 1 día antes**: 70% de reintegro
             - **El día de inicio**: 50% de reintegro
             - **Después del inicio**: Sin reintegro
             
-            **Opciones de reintegro:**
-            - Reintegro a tarjeta de crédito
-            - Crédito en cuenta corriente para otros cursos
+            **Proceso de reintegro:**
+            - Si pagó con cuenta corriente: crédito automático
+            - Si pagó con tarjeta: reintegro simulado
+            - Liberación automática de la vacante
+            - Email de confirmación de cancelación
             
             **Validaciones:**
-            - El alumno debe estar inscrito al curso
-            - El curso no debe haber finalizado
-            - Se respeta la política de fechas de cancelación
+            - La inscripción debe existir y estar activa
+            - Solo se puede dar de baja inscripciones en estado "inscripto"
+            - Se calcula automáticamente el reintegro según días restantes
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Baja procesada exitosamente con reintegro correspondiente"),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos o baja no permitida"),
+            @ApiResponse(responseCode = "200", description = "Baja procesada exitosamente con reintegro correspondiente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InscripcionCursoResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Solo se puede dar de baja una inscripción activa"),
             @ApiResponse(responseCode = "404", description = "Inscripción no encontrada"),
-            @ApiResponse(responseCode = "409", description = "No se puede dar de baja: curso ya finalizado"),
             @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
     })
-    @PostMapping("/baja")
-    public ResponseEntity<Void> darDeBaja(
-            @Parameter(description = "Datos de baja: ID de inscripción y tipo de reintegro", required = true)
-            @Valid @RequestBody BajaCursoRequestDTO dto
+    @PutMapping("/baja/{idInscripcion}")
+    public ResponseEntity<InscripcionCursoResponseDTO> darDeBaja(
+            @Parameter(description = "ID de la inscripción a dar de baja", example = "123")
+            @PathVariable Integer idInscripcion
     ) {
-        cursoService.darDeBajaDeCurso(dto);
-        return ResponseEntity.ok().build();
+        InscripcionCursoResponseDTO baja = inscripcionCursoService.darDeBaja(idInscripcion);
+        return ResponseEntity.ok(baja);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -193,18 +240,47 @@ public class CursoController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista de cursos del alumno",
+            @ApiResponse(responseCode = "200", description = "Lista de inscripciones del alumno",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MisCursosResponseDTO.class))),
+                            schema = @Schema(implementation = InscripcionCursoResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Alumno no encontrado"),
             @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
     })
     @GetMapping("/mis-cursos/{idAlumno}")
-    public ResponseEntity<List<MisCursosResponseDTO>> getMisCursos(
-            @Parameter(description = "ID del alumno para obtener sus cursos", example = "123")
+    public ResponseEntity<List<InscripcionCursoResponseDTO>> getMisCursos(
+            @Parameter(description = "ID del alumno para obtener sus inscripciones", example = "123")
             @PathVariable Integer idAlumno
     ) {
-        return ResponseEntity.ok(cursoService.getCursosContratadosPorAlumno(idAlumno));
+        return ResponseEntity.ok(inscripcionCursoService.getInscripcionesAlumno(idAlumno));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Obtener detalles de una inscripción específica",
+        description = """
+            Obtiene los detalles completos de una inscripción específica por su ID.
+            
+            **Información incluida:**
+            - Datos del curso y cronograma
+            - Estado de la inscripción (inscripto, baja)
+            - Información de pago y reintegros
+            - Fechas relevantes
+            - Datos de la sede
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Detalles de la inscripción",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InscripcionCursoResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Inscripción no encontrada"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
+    })
+    @GetMapping("/inscripcion/{idInscripcion}")
+    public ResponseEntity<InscripcionCursoResponseDTO> getInscripcionById(
+            @Parameter(description = "ID de la inscripción", example = "123")
+            @PathVariable Integer idInscripcion
+    ) {
+        return ResponseEntity.ok(inscripcionCursoService.getInscripcionById(idInscripcion));
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -232,19 +308,21 @@ public class CursoController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Asistencia registrada exitosamente"),
+            @ApiResponse(responseCode = "200", description = "Asistencia registrada exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AsistenciaRegistradaResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "QR inválido o fuera de horario de clase"),
             @ApiResponse(responseCode = "404", description = "Alumno no inscrito o curso no encontrado"),
             @ApiResponse(responseCode = "409", description = "Asistencia ya registrada para esta clase"),
             @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
     })
     @PostMapping("/asistencia/qr")
-    public ResponseEntity<String> registrarAsistenciaQR(
+    public ResponseEntity<AsistenciaRegistradaResponseDTO> registrarAsistenciaQR(
             @Parameter(description = "Datos del QR: código de sede, aula y alumno", required = true)
             @Valid @RequestBody AsistenciaQRRequestDTO dto
     ) {
-        cursoService.registrarAsistenciaQR(dto);
-        return ResponseEntity.ok("Asistencia registrada correctamente");
+        AsistenciaRegistradaResponseDTO response = cursoService.registrarAsistenciaQR(dto);
+        return ResponseEntity.ok(response);
     }
 
     @SecurityRequirement(name = "bearerAuth")

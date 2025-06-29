@@ -468,18 +468,20 @@ public class RecetaController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receta agregada exitosamente a favoritos"),
+            @ApiResponse(responseCode = "200", description = "Receta agregada exitosamente a favoritos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FavoritoResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Límite de 10 favoritos alcanzado"),
             @ApiResponse(responseCode = "404", description = "Usuario o receta no encontrados"),
             @ApiResponse(responseCode = "409", description = "La receta ya está en favoritos")
     })
     @PostMapping("/favorites")
-    public ResponseEntity<String> addToFavorites(
+    public ResponseEntity<FavoritoResponseDTO> addToFavorites(
             @Parameter(description = "IDs del usuario y receta a agregar", required = true)
             @RequestBody RecetaFavoritaRequestDTO dto
     ) {
-        recetaService.agregarAFavoritos(dto.getIdUsuario(), dto.getIdReceta());
-        return ResponseEntity.ok("Receta agregada a favoritos");
+        FavoritoResponseDTO response = recetaService.agregarAFavoritos(dto.getIdUsuario(), dto.getIdReceta());
+        return ResponseEntity.ok(response);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -500,16 +502,18 @@ public class RecetaController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receta eliminada exitosamente de favoritos"),
+            @ApiResponse(responseCode = "200", description = "Receta eliminada exitosamente de favoritos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FavoritoResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado o receta no está en favoritos")
     })
     @DeleteMapping("/favorites")
-    public ResponseEntity<String> removeFromFavorites(
+    public ResponseEntity<FavoritoResponseDTO> removeFromFavorites(
             @Parameter(description = "IDs del usuario y receta a eliminar de favoritos", required = true)
             @RequestBody RecetaFavoritaRequestDTO dto
     ) {
-        recetaService.quitarDeFavoritos(dto.getIdUsuario(), dto.getIdReceta());
-        return ResponseEntity.ok("Receta eliminada de favoritos");
+        FavoritoResponseDTO response = recetaService.quitarDeFavoritos(dto.getIdUsuario(), dto.getIdReceta());
+        return ResponseEntity.ok(response);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -751,17 +755,19 @@ public class RecetaController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receta aprobada exitosamente"),
+            @ApiResponse(responseCode = "200", description = "Receta aprobada exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaAprobacionResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "La receta ya está aprobada"),
             @ApiResponse(responseCode = "403", description = "Acceso denegado - solo para administradores"),
             @ApiResponse(responseCode = "404", description = "Receta no encontrada")
     })
     @PutMapping("/{id}/approve")
-    public ResponseEntity<String> aprobarReceta(
+    public ResponseEntity<RecetaAprobacionResponseDTO> aprobarReceta(
             @Parameter(description = "ID de la receta a aprobar", example = "123")
             @PathVariable Integer id
     ) {
-        recetaService.aprobarReceta(id);
-        return ResponseEntity.ok("Receta aprobada exitosamente");
+        RecetaAprobacionResponseDTO response = recetaService.aprobarReceta(id);
+        return ResponseEntity.ok(response);
     }
 }

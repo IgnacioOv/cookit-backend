@@ -1,6 +1,8 @@
 package com.uade.cookitbackend.service.impl;
 
 import com.uade.cookitbackend.dto.CreateRecetaDTO;
+import com.uade.cookitbackend.dto.FavoritoResponseDTO;
+import com.uade.cookitbackend.dto.RecetaAprobacionResponseDTO;
 import com.uade.cookitbackend.dto.UpdateRecetaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
 import com.uade.cookitbackend.entity.*;
@@ -375,7 +377,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     @Transactional
-    public void agregarAFavoritos(Integer idUsuario, Integer idReceta) {
+    public FavoritoResponseDTO agregarAFavoritos(Integer idUsuario, Integer idReceta) {
         // Verificar que la receta existe y está aprobada
         Receta receta = recetaRepository.findApprovedByIdWithIngredientes(idReceta)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RECETA_NOT_FOUND,
@@ -405,17 +407,40 @@ public class RecetaServiceImpl implements RecetaService {
         favorita.setUsuario(usuario);
         favorita.setReceta(receta);
         recetaFavoritaRepository.save(favorita);
+        
+        // Crear response
+        FavoritoResponseDTO response = new FavoritoResponseDTO();
+        response.setMensaje("Receta agregada a favoritos");
+        response.setAgregado(true);
+        response.setIdReceta(idReceta);
+        response.setNombreReceta(receta.getNombreReceta());
+        response.setTotalFavoritos((int) recetaFavoritaRepository.countByUsuario_IdUsuario(idUsuario));
+        response.setExitoso(true);
+        
+        return response;
     }
 
     @Override
     @Transactional
-    public void quitarDeFavoritos(Integer idUsuario, Integer idReceta) {
+    public FavoritoResponseDTO quitarDeFavoritos(Integer idUsuario, Integer idReceta) {
         RecetaFavorita favorita = recetaFavoritaRepository
                 .findByUsuario_IdUsuarioAndReceta_IdReceta(idUsuario, idReceta)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.FAVORITE_NOT_FOUND,
                         "La receta no está en favoritos del usuario"));
 
+        String nombreReceta = favorita.getReceta().getNombreReceta();
         recetaFavoritaRepository.delete(favorita);
+        
+        // Crear response
+        FavoritoResponseDTO response = new FavoritoResponseDTO();
+        response.setMensaje("Receta eliminada de favoritos");
+        response.setAgregado(false);
+        response.setIdReceta(idReceta);
+        response.setNombreReceta(nombreReceta);
+        response.setTotalFavoritos((int) recetaFavoritaRepository.countByUsuario_IdUsuario(idUsuario));
+        response.setExitoso(true);
+        
+        return response;
     }
 
     @Override
@@ -446,7 +471,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     @Transactional
-    public void aprobarReceta(Integer idReceta) {
+    public RecetaAprobacionResponseDTO aprobarReceta(Integer idReceta) {
         RecetaApproval approval = recetaApprovalRepository.findById(idReceta)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.RECETA_NOT_FOUND,
@@ -475,5 +500,16 @@ public class RecetaServiceImpl implements RecetaService {
         } catch (Exception e) {
             log.error("Error al enviar notificación de aprobación de receta: " + e.getMessage());
         }
+        
+        // Crear response
+        RecetaAprobacionResponseDTO response = new RecetaAprobacionResponseDTO();
+        response.setMensaje("Receta aprobada exitosamente");
+        response.setIdReceta(idReceta);
+        response.setNombreReceta(approval.getReceta().getNombreReceta());
+        response.setFechaAprobacion(java.time.LocalDateTime.now());
+        response.setAprobada(true);
+        response.setExitoso(true);
+        
+        return response;
     }
 }

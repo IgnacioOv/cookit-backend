@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Exitoso - CookIt</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ff6b35;
+            padding-bottom: 20px;
+        }
+        .logo {
+            max-width: 150px;
+            height: auto;
+        }
+        h1 {
+            color: #ff6b35;
+            margin-bottom: 10px;
+        }
+        .success-icon {
+            font-size: 48px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .details {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .cta-button {
+            background-color: #ff6b35;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img th:src="'cid:logo'" alt="CookIt Logo" class="logo">
+            <div class="success-icon">✅</div>
+            <h1>¡Pago Exitoso!</h1>
+            <p>Tu inscripción al curso ha sido confirmada</p>
+        </div>
+
+        <div>
+            <p>Hola <strong th:text="${nombreAlumno}">Estudiante</strong>,</p>
+            <p>¡Excelente noticia! Tu pago ha sido procesado exitosamente y tu inscripción al curso ha sido confirmada.</p>
+        </div>
+
+        <div class="details">
+            <h3 style="margin-top: 0; color: #ff6b35;">Detalles de la Inscripción</h3>
+            
+            <div class="detail-row">
+                <span class="detail-label">Curso:</span>
+                <span class="detail-value" th:text="${nombreCurso}">Nombre del Curso</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Fecha de Inicio:</span>
+                <span class="detail-value" th:text="${fechaInicio}">2024-01-15</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Sede:</span>
+                <span class="detail-value" th:text="${sede}">Sede Principal</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Método de Pago:</span>
+                <span class="detail-value" th:text="${metodoPago}">Tarjeta de Crédito</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Monto Pagado:</span>
+                <span class="detail-value amount">$<span th:text="${montoPagado}">150.00</span></span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Número de Transacción:</span>
+                <span class="detail-value" th:text="${numeroTransaccion}">TXN-1234567890</span>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <p><strong>¡Ya estás listo para comenzar tu experiencia culinaria!</strong></p>
+            <p>Recibirás más información sobre el curso por email antes de la fecha de inicio.</p>
+        </div>
+
+        <div class="footer">
+            <p>Este email fue enviado automáticamente por el sistema CookIt.</p>
+            <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+            <p><strong>¡Gracias por elegir CookIt!</strong></p>
+        </div>
+    </div>
+</body>
+</html>
