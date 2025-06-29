@@ -1,9 +1,11 @@
 package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.*;
+import com.uade.cookitbackend.dto.UpdateRecetaDTO;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.RecetaCalculadoraService;
 import com.uade.cookitbackend.service.mappers.PasoMapper;
+import com.uade.cookitbackend.config.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -31,6 +33,7 @@ public class RecetaController {
     private final RecetaService recetaService;
     private final RecetaCalculadoraService recetaCalculadoraService;
     private final PasoMapper pasoMapper;
+    private final JwtUtil jwtUtil;
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
@@ -73,6 +76,55 @@ public class RecetaController {
     ) {
         RecetaResponseDTO createdReceta = recetaService.createReceta(createRecetaDTO, reemplazar);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdReceta);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Editar una receta existente",
+        description = """
+            Permite al usuario editar una receta que le pertenece. La receta editada pasa automáticamente a estado no aprobado.
+            
+            **Características:**
+            - Solo el propietario de la receta puede editarla
+            - Usa el token Bearer para identificar al usuario
+            - Todos los campos son opcionales (se actualizan solo los proporcionados)
+            - La receta editada requiere nueva aprobación
+            - Se pueden actualizar: nombre, descripción, foto, porciones, tipo, ingredientes y pasos
+            
+            **Validaciones:**
+            - El usuario debe ser propietario de la receta
+            - La receta debe existir
+            - Los IDs de ingredientes, unidades y tipos deben ser válidos
+            
+            **Proceso post-edición:**
+            - La receta pasa a estado no aprobado (approved = false)
+            - Necesita nueva aprobación para ser visible públicamente
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Receta editada exitosamente - ahora pendiente de aprobación",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o usuario no autorizado"),
+            @ApiResponse(responseCode = "401", description = "Token no válido o expirado"),
+            @ApiResponse(responseCode = "404", description = "Receta no encontrada")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<RecetaResponseDTO> updateReceta(
+            @Parameter(description = "ID de la receta a editar", example = "123")
+            @PathVariable Integer id,
+            @Parameter(
+                    description = "Datos actualizados de la receta (todos los campos son opcionales)",
+                    required = true,
+                    schema = @Schema(implementation = UpdateRecetaDTO.class)
+            )
+            @Valid @RequestBody UpdateRecetaDTO updateRecetaDTO,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+        Integer userId = jwtUtil.extractUserId(token);
+        RecetaResponseDTO updatedReceta = recetaService.updateReceta(id, updateRecetaDTO, userId);
+        return ResponseEntity.ok(updatedReceta);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -416,18 +468,20 @@ public class RecetaController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receta agregada exitosamente a favoritos"),
+            @ApiResponse(responseCode = "200", description = "Receta agregada exitosamente a favoritos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FavoritoResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Límite de 10 favoritos alcanzado"),
             @ApiResponse(responseCode = "404", description = "Usuario o receta no encontrados"),
             @ApiResponse(responseCode = "409", description = "La receta ya está en favoritos")
     })
     @PostMapping("/favorites")
-    public ResponseEntity<String> addToFavorites(
+    public ResponseEntity<FavoritoResponseDTO> addToFavorites(
             @Parameter(description = "IDs del usuario y receta a agregar", required = true)
             @RequestBody RecetaFavoritaRequestDTO dto
     ) {
-        recetaService.agregarAFavoritos(dto.getIdUsuario(), dto.getIdReceta());
-        return ResponseEntity.ok("Receta agregada a favoritos");
+        FavoritoResponseDTO response = recetaService.agregarAFavoritos(dto.getIdUsuario(), dto.getIdReceta());
+        return ResponseEntity.ok(response);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -448,16 +502,18 @@ public class RecetaController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receta eliminada exitosamente de favoritos"),
+            @ApiResponse(responseCode = "200", description = "Receta eliminada exitosamente de favoritos",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FavoritoResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado o receta no está en favoritos")
     })
     @DeleteMapping("/favorites")
-    public ResponseEntity<String> removeFromFavorites(
+    public ResponseEntity<FavoritoResponseDTO> removeFromFavorites(
             @Parameter(description = "IDs del usuario y receta a eliminar de favoritos", required = true)
             @RequestBody RecetaFavoritaRequestDTO dto
     ) {
-        recetaService.quitarDeFavoritos(dto.getIdUsuario(), dto.getIdReceta());
-        return ResponseEntity.ok("Receta eliminada de favoritos");
+        FavoritoResponseDTO response = recetaService.quitarDeFavoritos(dto.getIdUsuario(), dto.getIdReceta());
+        return ResponseEntity.ok(response);
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -641,6 +697,41 @@ public class RecetaController {
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
+        summary = "Obtener recetas no aprobadas del usuario autenticado",
+        description = """
+            Obtiene todas las recetas que el usuario autenticado ha creado y que están pendientes de aprobación.
+            
+            **Características:**
+            - Utiliza el token Bearer para identificar al usuario
+            - Solo devuelve recetas del usuario autenticado
+            - Incluye recetas en estado no aprobado (approved = false)
+            - Ordenadas por fecha de creación (más recientes primero)
+            
+            **Casos de uso:**
+            - Ver mis recetas pendientes de aprobación
+            - Seguimiento del estado de las recetas enviadas
+            - Gestión personal de contenido
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de recetas no aprobadas del usuario (puede estar vacía)",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Token no válido o expirado"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    @GetMapping("/my-unapproved")
+    public ResponseEntity<List<RecetaResponseDTO>> getMyUnapprovedRecetas(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+        Integer userId = jwtUtil.extractUserId(token);
+        List<RecetaResponseDTO> recetas = recetaService.getRecetasNoAprobadasByUsuario(userId);
+        return ResponseEntity.ok(recetas);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
         summary = "Aprobar una receta",
         description = """
             Marca una receta como aprobada, haciéndola visible públicamente en la aplicación.
@@ -664,17 +755,19 @@ public class RecetaController {
             """
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Receta aprobada exitosamente"),
+            @ApiResponse(responseCode = "200", description = "Receta aprobada exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaAprobacionResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "La receta ya está aprobada"),
             @ApiResponse(responseCode = "403", description = "Acceso denegado - solo para administradores"),
             @ApiResponse(responseCode = "404", description = "Receta no encontrada")
     })
     @PutMapping("/{id}/approve")
-    public ResponseEntity<String> aprobarReceta(
+    public ResponseEntity<RecetaAprobacionResponseDTO> aprobarReceta(
             @Parameter(description = "ID de la receta a aprobar", example = "123")
             @PathVariable Integer id
     ) {
-        recetaService.aprobarReceta(id);
-        return ResponseEntity.ok("Receta aprobada exitosamente");
+        RecetaAprobacionResponseDTO response = recetaService.aprobarReceta(id);
+        return ResponseEntity.ok(response);
     }
 }

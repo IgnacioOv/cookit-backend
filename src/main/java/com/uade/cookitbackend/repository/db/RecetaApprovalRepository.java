@@ -12,4 +12,7 @@ public interface RecetaApprovalRepository extends JpaRepository<RecetaApproval, 
     
     @Query("SELECT ra FROM RecetaApproval ra JOIN FETCH ra.receta r JOIN FETCH r.usuario WHERE ra.approved = false")
     List<RecetaApproval> findUnapprovedRecetas();
+    
+    @Query("SELECT ra FROM RecetaApproval ra JOIN FETCH ra.receta r JOIN FETCH r.usuario WHERE ra.approved = false AND r.usuario.idUsuario = :idUsuario")
+    List<RecetaApproval> findUnapprovedRecetasByUsuario(Integer idUsuario);
 }

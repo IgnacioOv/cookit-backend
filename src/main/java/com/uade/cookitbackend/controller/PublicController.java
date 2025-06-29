@@ -108,6 +108,30 @@ public class PublicController {
     }
 
     @Operation(
+        summary = "Obtener feed público de recetas",
+        description = """
+            Obtiene un feed público con las recetas más recientes y populares para visitantes.
+            
+            **Versión pública:**
+            - Solo recetas aprobadas por la empresa
+            - Información básica sin funcionalidades avanzadas
+            - No requiere autenticación
+            - Ideal para mostrar contenido destacado en página principal
+            - Resultados optimizados para performance
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Feed de recetas públicas",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaResponseDTO.class)))
+    })
+    @GetMapping("/recetas/feed")
+    public ResponseEntity<List<RecetaResponseDTO>> getFeedPublic() {
+        List<RecetaResponseDTO> recetas = recetaService.getFeed();
+        return ResponseEntity.ok(recetas);
+    }
+
+    @Operation(
         summary = "Obtener lista de cursos disponibles",
         description = """
             Obtiene la lista de cursos disponibles con información básica para visitantes.

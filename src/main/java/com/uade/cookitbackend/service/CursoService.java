@@ -6,12 +6,11 @@ import com.uade.cookitbackend.dto.*;
 import java.util.List;
 
 public interface CursoService {
+    CursoResponseDTO createCurso(CreateCursoDTO createCursoDTO);
     List<CursoResponseDTO> getAllCursosDisponibles();
     List<CursoResponseDTO> getCursosBySede(Integer idSede);
     CursoResponseDTO getCursoById(Integer idCurso);
-    void inscribirAlumnoACurso(CursoInscripcionRequestDTO dto);
-    void darDeBajaDeCurso(BajaCursoRequestDTO dto);
     List<MisCursosResponseDTO> getCursosContratadosPorAlumno(Integer idAlumno);
-    void registrarAsistenciaQR(AsistenciaQRRequestDTO dto);
+    AsistenciaRegistradaResponseDTO registrarAsistenciaQR(AsistenciaQRRequestDTO dto);
     AsistenciaReportDTO getReporteAsistencia(Integer idAlumno, Integer idCronograma);
 }

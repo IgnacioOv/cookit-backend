@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotNull;
 @Data
 public class InscripcionCursoRequestDTO {
     @NotNull
-    @JsonProperty("id_alumno")
     private Integer idAlumno;
     @NotNull
-    @JsonProperty("id_cronograma")
     private Integer idCronograma;
+    @NotNull
+    private Boolean pagarConCuentaCorriente;
 }
