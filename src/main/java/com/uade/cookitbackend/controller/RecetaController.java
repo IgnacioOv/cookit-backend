@@ -4,6 +4,7 @@ import com.uade.cookitbackend.dto.*;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.RecetaCalculadoraService;
 import com.uade.cookitbackend.service.mappers.PasoMapper;
+import com.uade.cookitbackend.config.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -31,6 +32,7 @@ public class RecetaController {
     private final RecetaService recetaService;
     private final RecetaCalculadoraService recetaCalculadoraService;
     private final PasoMapper pasoMapper;
+    private final JwtUtil jwtUtil;
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
@@ -636,6 +638,41 @@ public class RecetaController {
     @GetMapping("/unapproved")
     public ResponseEntity<List<RecetaResponseDTO>> getRecetasNoAprobadas() {
         List<RecetaResponseDTO> recetas = recetaService.getRecetasNoAprobadas();
+        return ResponseEntity.ok(recetas);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Obtener recetas no aprobadas del usuario autenticado",
+        description = """
+            Obtiene todas las recetas que el usuario autenticado ha creado y que están pendientes de aprobación.
+            
+            **Características:**
+            - Utiliza el token Bearer para identificar al usuario
+            - Solo devuelve recetas del usuario autenticado
+            - Incluye recetas en estado no aprobado (approved = false)
+            - Ordenadas por fecha de creación (más recientes primero)
+            
+            **Casos de uso:**
+            - Ver mis recetas pendientes de aprobación
+            - Seguimiento del estado de las recetas enviadas
+            - Gestión personal de contenido
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de recetas no aprobadas del usuario (puede estar vacía)",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Token no válido o expirado"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    @GetMapping("/my-unapproved")
+    public ResponseEntity<List<RecetaResponseDTO>> getMyUnapprovedRecetas(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+        Integer userId = jwtUtil.extractUserId(token);
+        List<RecetaResponseDTO> recetas = recetaService.getRecetasNoAprobadasByUsuario(userId);
         return ResponseEntity.ok(recetas);
     }
 

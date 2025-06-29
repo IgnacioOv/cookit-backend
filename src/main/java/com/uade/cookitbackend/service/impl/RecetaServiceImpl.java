@@ -313,6 +313,14 @@ public class RecetaServiceImpl implements RecetaService {
     }
 
     @Override
+    public List<RecetaResponseDTO> getRecetasNoAprobadasByUsuario(Integer idUsuario) {
+        List<RecetaApproval> recetasNoAprobadas = recetaApprovalRepository.findUnapprovedRecetasByUsuario(idUsuario);
+        return recetasNoAprobadas.stream()
+                .map(approval -> recetaMapper.recetaToRecetaResponseDTO(approval.getReceta()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public void aprobarReceta(Integer idReceta) {
         RecetaApproval approval = recetaApprovalRepository.findById(idReceta)
