@@ -1,5 +1,10 @@
 package com.uade.cookitbackend.controller;
 
+import com.uade.cookitbackend.entity.Notificacion;
+import com.uade.cookitbackend.service.NotificacionService;
+import com.uade.cookitbackend.config.JwtUtil;
+import com.uade.cookitbackend.exception.UnauthorizedException;
+import com.uade.cookitbackend.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,14 +15,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/notification")
 @RequiredArgsConstructor
 @Tag(name = "Notificaciones", description = "API para gestión de notificaciones push y mensajería")
 public class NotificationController {
+
+    private final NotificacionService notificacionService;
+    private final JwtUtil jwtUtil;
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
@@ -54,8 +65,25 @@ public class NotificationController {
             @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
     })
     @GetMapping
-    public NotificationResponse getNotification() {
-        return new NotificationResponse("Notification message", "info");
+    public List<Notificacion> getNotification(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException(
+                ErrorCode.UNAUTHORIZED,
+                "Authorization header missing or invalid"
+            );
+        }
+        
+        String token = authHeader.replace("Bearer ", "");
+        Integer usuarioId = jwtUtil.extractUserId(token);
+        
+        if (usuarioId == null) {
+            throw new UnauthorizedException(
+                ErrorCode.UNAUTHORIZED,
+                "Invalid token"
+            );
+        }
+        
+        return notificacionService.obtenerNotificacionesPorUsuario(usuarioId);
     }
 
     @Data

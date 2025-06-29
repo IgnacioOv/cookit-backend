@@ -495,7 +495,8 @@ public class RecetaServiceImpl implements RecetaService {
 
             notificationRepository.sendNotification(lastSesion.getFmc(),
                     "Receta aprobada",
-                    "La receta  ha sido aprobada por el administrador.");
+                    "La receta  ha sido aprobada por el administrador.",
+                    usuarioToSendNot.getIdUsuario());
 
         } catch (Exception e) {
             log.error("Error al enviar notificación de aprobación de receta: " + e.getMessage());
