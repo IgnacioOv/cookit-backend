@@ -17,7 +17,6 @@ public interface RecetaMapper {
     @Mapping(target = "usuario", ignore = true)
     @Mapping(target = "tipoReceta", ignore = true)
     @Mapping(target = "ingredientesUtilizados", ignore = true)
-    @Mapping(target = "pasos", ignore = true)
     @Mapping(target = "fotos", ignore = true)
     @Mapping(target = "calificaciones", ignore = true)
     Receta toEntity(CreateRecetaDTO createRecetaDTO);
