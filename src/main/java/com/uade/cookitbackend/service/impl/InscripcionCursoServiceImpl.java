@@ -134,7 +134,7 @@ public class InscripcionCursoServiceImpl implements InscripcionCursoService {
 
     @Override
     @Transactional
-    public InscripcionCursoResponseDTO darDeBaja(Integer idInscripcion) {
+    public InscripcionCursoResponseDTO darDeBaja(Integer idInscripcion, Boolean reintegroEnCuentaCorriente) {
         InscripcionCurso insc = inscripcionRepo.findById(idInscripcion)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.INSCRIPCION_CURSO_NOT_FOUND,"Inscripción no encontrada"));
         if (!"inscripto".equals(insc.getEstado())) {
@@ -159,11 +159,21 @@ public class InscripcionCursoServiceImpl implements InscripcionCursoService {
             montoReintegro = BigDecimal.ZERO; // ya empezó, sin reintegro
         }
 
-        // Simulación de reintegro a tarjeta o cuenta corriente
+        // Procesar el reintegro según el flag
+        if (reintegroEnCuentaCorriente != null && reintegroEnCuentaCorriente) {
+            // Reintegro real a cuenta corriente
+            Alumno alumno = insc.getAlumno();
+            alumno.setCuentaCorriente(alumno.getCuentaCorriente().add(montoReintegro));
+            alumnoRepo.save(alumno);
+            insc.setMotivoBaja("Solicitud del alumno - Reintegro a cuenta corriente: $" + montoReintegro);
+        } else {
+            // Simulación de reintegro a tarjeta
+            insc.setMotivoBaja("Solicitud del alumno - Reintegro simulado a tarjeta: $" + montoReintegro);
+        }
+
         insc.setEstado("baja");
         insc.setMontoReintegrado(montoReintegro);
         insc.setFechaBaja(LocalDate.now());
-        insc.setMotivoBaja("Solicitud del alumno");
 
         // Devolver la vacante solo si la baja fue antes de iniciar
         if (diasRestantes >= 0) {

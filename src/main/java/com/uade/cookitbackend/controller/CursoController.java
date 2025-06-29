@@ -216,9 +216,11 @@ public class CursoController {
     @PutMapping("/baja/{idInscripcion}")
     public ResponseEntity<InscripcionCursoResponseDTO> darDeBaja(
             @Parameter(description = "ID de la inscripción a dar de baja", example = "123")
-            @PathVariable Integer idInscripcion
+            @PathVariable Integer idInscripcion,
+            @Parameter(description = "Flag para indicar si el reintegro va a cuenta corriente (true) o simulación a tarjeta (false)", example = "false")
+            @RequestParam(defaultValue = "false") Boolean reintegroEnCuentaCorriente
     ) {
-        InscripcionCursoResponseDTO baja = inscripcionCursoService.darDeBaja(idInscripcion);
+        InscripcionCursoResponseDTO baja = inscripcionCursoService.darDeBaja(idInscripcion, reintegroEnCuentaCorriente);
         return ResponseEntity.ok(baja);
     }
 
