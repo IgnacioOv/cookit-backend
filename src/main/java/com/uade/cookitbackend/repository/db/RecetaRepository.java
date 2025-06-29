@@ -48,7 +48,7 @@ public interface RecetaRepository extends JpaRepository<Receta, Integer> {
            "WHERE r.idReceta = :idReceta")
     Optional<Receta> findByIdWithIngredientes(@Param("idReceta") Integer idReceta);
 
-    @Query("SELECT r FROM Receta r JOIN RecetaApproval ra ON r.idReceta = ra.idReceta WHERE ra.approved = true")
+    @Query("SELECT r FROM Receta r JOIN RecetaApproval ra ON r.idReceta = ra.idReceta WHERE ra.approved = true ORDER BY r.idReceta DESC")
     List<Receta> findAllApproved();
 
     @Query("SELECT r FROM Receta r JOIN RecetaApproval ra ON r.idReceta = ra.idReceta WHERE ra.approved = true AND LOWER(r.nombreReceta) LIKE LOWER(CONCAT('%', :nombre, '%')) ORDER BY r.idReceta DESC")
