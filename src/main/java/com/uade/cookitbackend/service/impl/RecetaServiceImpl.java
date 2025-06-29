@@ -134,7 +134,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getRecetasWithoutIngrediente(String ingrediente, String orden) {
-        Sort sort = "fecha".equalsIgnoreCase(orden) 
+        Sort sort = "fecha".equalsIgnoreCase(orden)
                 ? Sort.by(Sort.Direction.DESC, "idReceta")
                 : "usuario".equalsIgnoreCase(orden)
                 ? Sort.by(Sort.Direction.ASC, "usuario.nombreUsuario")
@@ -148,7 +148,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getRecetasWithIngrediente(String ingrediente, String orden) {
-        Sort sort = "fecha".equalsIgnoreCase(orden) 
+        Sort sort = "fecha".equalsIgnoreCase(orden)
                 ? Sort.by(Sort.Direction.DESC, "idReceta")
                 : "usuario".equalsIgnoreCase(orden)
                 ? Sort.by(Sort.Direction.ASC, "usuario.nombreUsuario")
@@ -201,13 +201,13 @@ public class RecetaServiceImpl implements RecetaService {
         // Verificar si existe receta duplicada
         boolean exists = recetaRepository.existsByNombreRecetaAndUsuario_IdUsuario(
                 createRecetaDTO.getNombreReceta(), createRecetaDTO.getIdUsuario());
-        
+
         if (exists && !reemplazar) {
             throw new DuplicateResourceException(ErrorCode.DUPLICATE_RECIPE_NAME,
-                    "Ya existe una receta con el nombre '" + createRecetaDTO.getNombreReceta() + 
-                    "' para este usuario. Use reemplazar=true para sobrescribir.");
+                    "Ya existe una receta con el nombre '" + createRecetaDTO.getNombreReceta() +
+                            "' para este usuario. Use reemplazar=true para sobrescribir.");
         }
-        
+
         if (exists && reemplazar) {
             // Eliminar receta existente
             Optional<Receta> recetaExistente = recetaRepository.findByNombreRecetaAndUsuario_IdUsuario(
@@ -216,7 +216,7 @@ public class RecetaServiceImpl implements RecetaService {
                 recetaRepository.delete(recetaExistente.get());
             }
         }
-        
+
         return createReceta(createRecetaDTO);
     }
 
@@ -227,7 +227,7 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public List<RecetaResponseDTO> getRecetasByTipo(Integer idTipo, String orden) {
-        Sort sort = "fecha".equalsIgnoreCase(orden) 
+        Sort sort = "fecha".equalsIgnoreCase(orden)
                 ? Sort.by(Sort.Direction.DESC, "idReceta")
                 : "usuario".equalsIgnoreCase(orden)
                 ? Sort.by(Sort.Direction.ASC, "usuario.nombreUsuario")
@@ -254,7 +254,7 @@ public class RecetaServiceImpl implements RecetaService {
     public void agregarAFavoritos(Integer idUsuario, Integer idReceta) {
         // Verificar que la receta existe y está aprobada
         Receta receta = recetaRepository.findApprovedByIdWithIngredientes(idReceta)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RECETA_NOT_FOUND, 
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RECETA_NOT_FOUND,
                         "Receta no encontrada o no aprobada"));
 
         // Verificar que el usuario existe
@@ -265,7 +265,7 @@ public class RecetaServiceImpl implements RecetaService {
 
         // Verificar que no esté ya en favoritos
         if (recetaFavoritaRepository.existsByUsuario_IdUsuarioAndReceta_IdReceta(idUsuario, idReceta)) {
-            throw new DuplicateResourceException(ErrorCode.DUPLICATE_FAVORITE, 
+            throw new DuplicateResourceException(ErrorCode.DUPLICATE_FAVORITE,
                     "La receta ya está en favoritos del usuario");
         }
 
@@ -288,7 +288,7 @@ public class RecetaServiceImpl implements RecetaService {
     public void quitarDeFavoritos(Integer idUsuario, Integer idReceta) {
         RecetaFavorita favorita = recetaFavoritaRepository
                 .findByUsuario_IdUsuarioAndReceta_IdReceta(idUsuario, idReceta)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.FAVORITE_NOT_FOUND, 
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.FAVORITE_NOT_FOUND,
                         "La receta no está en favoritos del usuario"));
 
         recetaFavoritaRepository.delete(favorita);
@@ -320,25 +320,27 @@ public class RecetaServiceImpl implements RecetaService {
                         ErrorCode.RECETA_NOT_FOUND,
                         "Receta con ID " + idReceta + " no encontrada."
                 ));
-        
+
         if (approval.getApproved()) {
             throw new BadRequestException(
                     ErrorCode.RECETA_ALREADY_APPROVED,
                     "La receta con ID " + idReceta + " ya está aprobada."
             );
         }
-        
+
         approval.setApproved(true);
         recetaApprovalRepository.save(approval);
-        try{ UsernamePasswordAuthenticationToken userauth = SessionUtils.getCurrenteUser(UsernamePasswordAuthenticationToken.class);
-            User user = (User) userauth.getPrincipal(); // Esto es para obtener el usuario autenticado, si es necesario
-            Usuario usuarioToSendNot= usuarioService.getUsuarioByMail(user.getUsername());
-            UserSession lastSesion= userSessionRepository.findLastUserSessionByUser(usuarioToSendNot).getFirst();
+
+        try {
+
+            Usuario usuarioToSendNot = usuarioService.getUsuarioById(approval.getReceta().getUsuario().getIdUsuario());
+            UserSession lastSesion = userSessionRepository.findLastUserSessionByUser(usuarioToSendNot).getFirst();
 
             notificationRepository.sendNotification(lastSesion.getFmc(),
                     "Receta aprobada",
-                    "La receta  ha sido aprobada por el administrador.");;
-        } catch (Exception e){
+                    "La receta  ha sido aprobada por el administrador.");
+
+        } catch (Exception e) {
             log.error("Error al enviar notificación de aprobación de receta: " + e.getMessage());
         }
     }
