@@ -46,6 +46,7 @@ public class SecurityConfig {
                                 "/api/users/reset-password/complete",
                                 "/api/users/mail-verify/confirm",
                                 "/api/public/**", // Endpoints públicos para visitantes
+                                "/api/recetas/**", // Todos los endpoints de recetas son públicos
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
