@@ -16,16 +16,11 @@ import com.uade.cookitbackend.repository.db.*;
 import com.uade.cookitbackend.repository.notification.NotificationRepository;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.UsuarioService;
-import com.uade.cookitbackend.service.impl.TipoRecetaServiceImpl;
 import com.uade.cookitbackend.service.mappers.RecetaMapper;
-import com.uade.cookitbackend.utils.SessionUtils;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -104,6 +99,19 @@ public class RecetaServiceImpl implements RecetaService {
         recetaApproval.setReceta(savedReceta);
         recetaApproval.setApproved(false);
         recetaApprovalRepository.save(recetaApproval);
+
+        // Guardar multimedia extra si existe
+        if (createRecetaDTO.getMultimediaExtra() != null && !createRecetaDTO.getMultimediaExtra().isEmpty()) {
+            List<RecetaMultimedia> multimediaList = createRecetaDTO.getMultimediaExtra().stream()
+                    .map(url -> {
+                        RecetaMultimedia multimedia = new RecetaMultimedia();
+                        multimedia.setReceta(savedReceta);
+                        multimedia.setUrlMultimedia(url);
+                        return multimedia;
+                    })
+                    .collect(Collectors.toList());
+            recetaMultimediaRepository.saveAll(multimediaList);
+        }
 
         return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
     }

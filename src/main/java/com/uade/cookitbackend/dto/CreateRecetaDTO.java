@@ -15,4 +15,5 @@ public class CreateRecetaDTO {
     private Integer idTipo;
     private List<PasoDto> pasos;
     private List<IngredienteUtilizadoDto> ingredientesUtilizados;
+    private List<String> multimediaExtra;
 }
