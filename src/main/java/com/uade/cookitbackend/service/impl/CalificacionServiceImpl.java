@@ -3,11 +3,13 @@ package com.uade.cookitbackend.service.impl;
 import com.uade.cookitbackend.dto.CalificacionRequestDTO;
 import com.uade.cookitbackend.dto.CalificacionResponseDTO;
 import com.uade.cookitbackend.entity.Calificacion;
+import com.uade.cookitbackend.entity.CalificacionApproval;
 import com.uade.cookitbackend.entity.Receta;
 import com.uade.cookitbackend.entity.Usuario;
 import com.uade.cookitbackend.exception.DuplicateResourceException;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
+import com.uade.cookitbackend.repository.db.CalificacionApprovalRepository;
 import com.uade.cookitbackend.repository.db.CalificacionRepository;
 import com.uade.cookitbackend.repository.db.RecetaRepository;
 import com.uade.cookitbackend.repository.db.UsuarioRepository;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class CalificacionServiceImpl implements CalificacionService {
 
     private final CalificacionRepository calificacionRepository;
+    private final CalificacionApprovalRepository calificacionApprovalRepository;
     private final UsuarioRepository usuarioRepository;
     private final RecetaRepository recetaRepository;
 
@@ -47,7 +50,14 @@ public class CalificacionServiceImpl implements CalificacionService {
         calificacion.setCalificacion(request.getCalificacion());
         calificacion.setComentarios(request.getComentarios());
 
-        return mapToDTO(calificacionRepository.save(calificacion));
+        Calificacion savedCalificacion = calificacionRepository.save(calificacion);
+
+        CalificacionApproval approval = new CalificacionApproval();
+        approval.setCalificacion(savedCalificacion);
+        approval.setApproved(false);
+        calificacionApprovalRepository.save(approval);
+
+        return mapToDTO(savedCalificacion);
     }
 
     @Override
@@ -92,6 +102,24 @@ public class CalificacionServiceImpl implements CalificacionService {
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CalificacionResponseDTO> obtenerCalificacionesNoAprobadas() {
+        return calificacionApprovalRepository.findByApprovedFalse()
+                .stream()
+                .map(calificacionApproval -> mapToDTO(calificacionApproval.getCalificacion()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void aprobarCalificacion(Integer id) {
+        CalificacionApproval approval = calificacionApprovalRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CALIFICACION_NOT_FOUND, "Calificación no encontrada"));
+        
+        approval.setApproved(true);
+        calificacionApprovalRepository.save(approval);
     }
 
     private CalificacionResponseDTO mapToDTO(Calificacion calificacion) {

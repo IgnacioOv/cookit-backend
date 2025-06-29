@@ -111,4 +111,9 @@ public class AlumnoServiceImpl implements AlumnoService {
         alumno = alumnoRepository.save(alumno);
         return alumnoMapper.toResponseDTO(alumno);
     }
+
+    @Override
+    public boolean isUsuarioAlumno(Integer userId) {
+        return alumnoRepository.findByUsuarioIdUsuario(userId).isPresent();
+    }
 }

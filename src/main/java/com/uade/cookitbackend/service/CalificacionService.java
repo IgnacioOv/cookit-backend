@@ -12,4 +12,6 @@ public interface CalificacionService {
     CalificacionResponseDTO obtenerCalificacion(Integer id);
     List<CalificacionResponseDTO> obtenerCalificacionesPorReceta(Integer idReceta);
     List<CalificacionResponseDTO> obtenerTodasLasCalificaciones();
+    List<CalificacionResponseDTO> obtenerCalificacionesNoAprobadas();
+    void aprobarCalificacion(Integer id);
 }
