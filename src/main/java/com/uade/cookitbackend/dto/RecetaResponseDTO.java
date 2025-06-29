@@ -22,4 +22,5 @@ public class RecetaResponseDTO {
     private String usuarioNickname;
     private List<PasoDto> pasos;
     private List<IngredienteUtilizadoDto> ingredientesUtilizados;
+    private List<String> multimediaExtra;
 }

@@ -113,7 +113,7 @@ public class RecetaServiceImpl implements RecetaService {
             recetaMultimediaRepository.saveAll(multimediaList);
         }
 
-        return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
+        return enrichWithMultimedia(recetaMapper.recetaToRecetaResponseDTO(savedReceta));
     }
 
     @Override
@@ -123,6 +123,7 @@ public class RecetaServiceImpl implements RecetaService {
 
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
+                .map(this::enrichWithMultimedia)
                 .collect(Collectors.toList());
     }
 
@@ -131,6 +132,7 @@ public class RecetaServiceImpl implements RecetaService {
         List<Receta> recetas = recetaRepository.findApprovedRecetaByUsuario_IdUsuario(userId);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
+                .map(this::enrichWithMultimedia)
                 .collect(Collectors.toList());
     }
 
@@ -145,6 +147,7 @@ public class RecetaServiceImpl implements RecetaService {
         List<Receta> recetas = recetaRepository.findApprovedRecetasSinIngrediente(ingrediente, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
+                .map(this::enrichWithMultimedia)
                 .collect(Collectors.toList());
     }
 
@@ -159,6 +162,7 @@ public class RecetaServiceImpl implements RecetaService {
         List<Receta> recetas = recetaRepository.findApprovedRecetasConIngrediente(ingrediente, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
+                .map(this::enrichWithMultimedia)
                 .collect(Collectors.toList());
     }
 
@@ -169,7 +173,7 @@ public class RecetaServiceImpl implements RecetaService {
                         ErrorCode.RECETA_NOT_FOUND,
                         "Receta con ID " + id + " no encontrada o no aprobada."
                 ));
-        return recetaMapper.recetaToRecetaResponseDTO(receta);
+        return enrichWithMultimedia(recetaMapper.recetaToRecetaResponseDTO(receta));
     }
 
     @Override
@@ -335,7 +339,7 @@ public class RecetaServiceImpl implements RecetaService {
         approval.setApproved(false);
         recetaApprovalRepository.save(approval);
 
-        return recetaMapper.recetaToRecetaResponseDTO(savedReceta);
+        return enrichWithMultimedia(recetaMapper.recetaToRecetaResponseDTO(savedReceta));
     }
 
     @Override
@@ -354,6 +358,7 @@ public class RecetaServiceImpl implements RecetaService {
         List<Receta> recetas = recetaRepository.findApprovedByTipoReceta(idTipo, sort);
         return recetas.stream()
                 .map(recetaMapper::recetaToRecetaResponseDTO)
+                .map(this::enrichWithMultimedia)
                 .collect(Collectors.toList());
     }
 
@@ -560,5 +565,14 @@ public class RecetaServiceImpl implements RecetaService {
         responseDTO.setFechaSubida(savedMultimedia.getFechaSubida());
 
         return responseDTO;
+    }
+
+    private RecetaResponseDTO enrichWithMultimedia(RecetaResponseDTO dto) {
+        List<RecetaMultimedia> multimedia = recetaMultimediaRepository.findByReceta_IdReceta(dto.getIdReceta());
+        List<String> multimediaUrls = multimedia.stream()
+                .map(RecetaMultimedia::getUrlMultimedia)
+                .collect(Collectors.toList());
+        dto.setMultimediaExtra(multimediaUrls);
+        return dto;
     }
 }

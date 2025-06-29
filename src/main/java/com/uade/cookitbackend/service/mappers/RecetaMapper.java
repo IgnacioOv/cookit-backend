@@ -24,6 +24,7 @@ public interface RecetaMapper {
     @Mapping(source = "usuario.nickname", target = "usuarioNickname")
     @Mapping(source = "tipoReceta.descripcion", target = "tipoRecetaDescripcion")
     @Mapping(source = "ingredientesUtilizados", target = "ingredientesUtilizados")
+    @Mapping(target = "multimediaExtra", ignore = true)
     RecetaResponseDTO recetaToRecetaResponseDTO(Receta receta);
 
     // Nuevo: mapeo sin pasos
@@ -31,5 +32,6 @@ public interface RecetaMapper {
     @Mapping(source = "tipoReceta.descripcion", target = "tipoRecetaDescripcion")
     @Mapping(source = "ingredientesUtilizados", target = "ingredientesUtilizados")
     @Mapping(target = "pasos", ignore = true)
+    @Mapping(target = "multimediaExtra", ignore = true)
     RecetaResponseDTO recetaToRecetaResponseDTOSinPasos(Receta receta);
 }
