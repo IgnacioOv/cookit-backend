@@ -1,8 +1,10 @@
 package com.uade.cookitbackend.service.impl;
 
 import com.uade.cookitbackend.dto.CreateRecetaDTO;
+import com.uade.cookitbackend.dto.CreateRecetaMultimediaDTO;
 import com.uade.cookitbackend.dto.FavoritoResponseDTO;
 import com.uade.cookitbackend.dto.RecetaAprobacionResponseDTO;
+import com.uade.cookitbackend.dto.RecetaMultimediaResponseDTO;
 import com.uade.cookitbackend.dto.UpdateRecetaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
 import com.uade.cookitbackend.entity.*;
@@ -40,6 +42,7 @@ public class RecetaServiceImpl implements RecetaService {
     private final RecetaRepository recetaRepository;
     private final RecetaFavoritaRepository recetaFavoritaRepository;
     private final RecetaApprovalRepository recetaApprovalRepository;
+    private final RecetaMultimediaRepository recetaMultimediaRepository;
     private final RecetaMapper recetaMapper;
     private final UsuarioService usuarioService;
     private final TipoRecetaServiceImpl tipoRecetaServiceImpl;
@@ -526,5 +529,28 @@ public class RecetaServiceImpl implements RecetaService {
                 }
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public RecetaMultimediaResponseDTO createRecetaMultimedia(CreateRecetaMultimediaDTO createRecetaMultimediaDTO) {
+        Receta receta = recetaRepository.findById(createRecetaMultimediaDTO.getIdReceta())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.RECETA_NOT_FOUND,
+                        "Receta no encontrada con ID: " + createRecetaMultimediaDTO.getIdReceta()));
+
+        RecetaMultimedia recetaMultimedia = new RecetaMultimedia();
+        recetaMultimedia.setReceta(receta);
+        recetaMultimedia.setUrlMultimedia(createRecetaMultimediaDTO.getUrlMultimedia());
+
+        RecetaMultimedia savedMultimedia = recetaMultimediaRepository.save(recetaMultimedia);
+
+        RecetaMultimediaResponseDTO responseDTO = new RecetaMultimediaResponseDTO();
+        responseDTO.setIdMultimedia(savedMultimedia.getIdMultimedia());
+        responseDTO.setIdReceta(savedMultimedia.getReceta().getIdReceta());
+        responseDTO.setUrlMultimedia(savedMultimedia.getUrlMultimedia());
+        responseDTO.setFechaSubida(savedMultimedia.getFechaSubida());
+
+        return responseDTO;
     }
 }

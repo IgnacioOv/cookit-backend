@@ -1,8 +1,10 @@
 package com.uade.cookitbackend.service;
 
 import com.uade.cookitbackend.dto.CreateRecetaDTO;
+import com.uade.cookitbackend.dto.CreateRecetaMultimediaDTO;
 import com.uade.cookitbackend.dto.FavoritoResponseDTO;
 import com.uade.cookitbackend.dto.RecetaAprobacionResponseDTO;
+import com.uade.cookitbackend.dto.RecetaMultimediaResponseDTO;
 import com.uade.cookitbackend.dto.UpdateRecetaDTO;
 import com.uade.cookitbackend.dto.RecetaResponseDTO;
 import com.uade.cookitbackend.entity.Paso;
@@ -30,4 +32,5 @@ public interface RecetaService {
     List<RecetaResponseDTO> getRecetasNoAprobadas();
     List<RecetaResponseDTO> getRecetasNoAprobadasByUsuario(Integer idUsuario);
     RecetaAprobacionResponseDTO aprobarReceta(Integer idReceta);
+    RecetaMultimediaResponseDTO createRecetaMultimedia(CreateRecetaMultimediaDTO createRecetaMultimediaDTO);
 }

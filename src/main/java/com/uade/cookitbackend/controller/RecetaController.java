@@ -1,6 +1,8 @@
 package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.*;
+import com.uade.cookitbackend.dto.CreateRecetaMultimediaDTO;
+import com.uade.cookitbackend.dto.RecetaMultimediaResponseDTO;
 import com.uade.cookitbackend.dto.UpdateRecetaDTO;
 import com.uade.cookitbackend.service.RecetaService;
 import com.uade.cookitbackend.service.RecetaCalculadoraService;
@@ -733,5 +735,39 @@ public class RecetaController {
     ) {
         RecetaAprobacionResponseDTO response = recetaService.aprobarReceta(id);
         return ResponseEntity.ok(response);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Agregar multimedia a una receta",
+        description = """
+            Permite agregar contenido multimedia (imágenes, videos) a una receta existente.
+            
+            **Características:**
+            - Valida que la receta exista antes de agregar el multimedia
+            - Registra automáticamente la fecha de subida
+            - Acepta URLs de hasta 500 caracteres
+            - Devuelve información completa del multimedia creado
+            
+            **Casos de uso:**
+            - Agregar fotos adicionales a recetas
+            - Incluir videos de preparación
+            - Documentar pasos específicos con imágenes
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Multimedia agregado exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RecetaMultimediaResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
+            @ApiResponse(responseCode = "404", description = "Receta no encontrada")
+    })
+    @PostMapping("/multimedia")
+    public ResponseEntity<RecetaMultimediaResponseDTO> createRecetaMultimedia(
+            @Parameter(description = "Datos del multimedia a agregar", required = true)
+            @Valid @RequestBody CreateRecetaMultimediaDTO createRecetaMultimediaDTO
+    ) {
+        RecetaMultimediaResponseDTO response = recetaService.createRecetaMultimedia(createRecetaMultimediaDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
