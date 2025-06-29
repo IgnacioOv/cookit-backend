@@ -2,7 +2,9 @@ package com.uade.cookitbackend.controller;
 
 import com.uade.cookitbackend.dto.*;
 import com.uade.cookitbackend.service.CursoService;
+import com.uade.cookitbackend.service.HorarioCronogramaService;
 import com.uade.cookitbackend.service.InscripcionCursoService;
+import com.uade.cookitbackend.service.RequisitoInsumoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,6 +28,8 @@ public class CursoController {
 
     private final CursoService cursoService;
     private final InscripcionCursoService inscripcionCursoService;
+    private final HorarioCronogramaService horarioCronogramaService;
+    private final RequisitoInsumoService requisitoInsumoService;
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
@@ -367,5 +371,78 @@ public class CursoController {
             @PathVariable Integer idCronograma
     ) {
         return ResponseEntity.ok(cursoService.getReporteAsistencia(idAlumno, idCronograma));
+    }
+
+    @Operation(
+        summary = "Obtener horarios de un cronograma específico",
+        description = """
+            Obtiene todos los horarios detallados configurados para un cronograma de curso.
+            
+            **Información incluida:**
+            - Días de la semana y horarios específicos
+            - Horarios de inicio y fin por día
+            - Observaciones para cada sesión
+            - Ordenamiento por día de semana
+            
+            **Casos de uso:**
+            - Mostrar horarios al alumno antes de inscribirse
+            - Planificación de asistencia
+            - Verificación de disponibilidad de horarios
+            """
+    )
+    @GetMapping("/{idCurso}/cronograma/{idCronograma}/horarios")
+    public ResponseEntity<List<HorarioCronogramaResponseDTO>> obtenerHorariosCronograma(
+            @Parameter(description = "ID del curso", example = "1")
+            @PathVariable Integer idCurso,
+            @Parameter(description = "ID del cronograma", example = "1")
+            @PathVariable Integer idCronograma) {
+        List<HorarioCronogramaResponseDTO> horarios = horarioCronogramaService.obtenerHorariosPorCronograma(idCronograma);
+        return ResponseEntity.ok(horarios);
+    }
+
+    @Operation(
+        summary = "Obtener requisitos e insumos de un curso",
+        description = """
+            Obtiene la lista completa de requisitos, insumos y utensilios necesarios para un curso.
+            
+            **Información incluida:**
+            - Utensilios necesarios (cuchillos, sartenes, etc.)
+            - Ingredientes específicos que debe traer el alumno
+            - Materiales (delantales, gorros, etc.)
+            - Equipos especiales requeridos
+            - Cantidades y marcas sugeridas
+            - Clasificación por obligatorio/opcional
+            
+            **Casos de uso:**
+            - Lista de compras para el alumno
+            - Preparación previa al curso
+            - Verificación de materiales en clase
+            """
+    )
+    @GetMapping("/{idCurso}/requisitos")
+    public ResponseEntity<List<RequisitoInsumoResponseDTO>> obtenerRequisitosCurso(
+            @Parameter(description = "ID del curso", example = "1")
+            @PathVariable Integer idCurso) {
+        List<RequisitoInsumoResponseDTO> requisitos = requisitoInsumoService.obtenerRequisitosPorCurso(idCurso);
+        return ResponseEntity.ok(requisitos);
+    }
+
+    @Operation(
+        summary = "Obtener solo los requisitos obligatorios de un curso",
+        description = """
+            Obtiene únicamente los elementos que son obligatorios traer al curso.
+            
+            **Casos de uso:**
+            - Lista mínima indispensable
+            - Checklist básico para el alumno
+            - Verificación de requisitos esenciales
+            """
+    )
+    @GetMapping("/{idCurso}/requisitos/obligatorios")
+    public ResponseEntity<List<RequisitoInsumoResponseDTO>> obtenerRequisitosObligatoriosCurso(
+            @Parameter(description = "ID del curso", example = "1")
+            @PathVariable Integer idCurso) {
+        List<RequisitoInsumoResponseDTO> requisitos = requisitoInsumoService.obtenerRequisitosObligatoriosPorCurso(idCurso);
+        return ResponseEntity.ok(requisitos);
     }
 }
