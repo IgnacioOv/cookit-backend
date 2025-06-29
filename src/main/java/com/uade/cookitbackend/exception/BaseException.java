@@ -1,32 +1,35 @@
 package com.uade.cookitbackend.exception;
 
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+@Getter
 public class BaseException extends RuntimeException {
 
-    private final String message;
-    private final int statusCode;
+    private final ErrorCode errorCode;
+    private final HttpStatus httpStatus;
 
-    public BaseException() {
-        this.message = "An error occurred";
-        this.statusCode = 500;
-    }
-
-    public BaseException(String message) {
+    public BaseException(String message, ErrorCode errorCode) {
         super(message);
-        this.message = message;
-        this.statusCode = 500;
+        this.errorCode = errorCode;
+        this.httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
-    public BaseException(int statusCode, String message) {
+    public BaseException(String message, ErrorCode errorCode, HttpStatus httpStatus) {
         super(message);
-        this.message = message;
-        this.statusCode = statusCode;
+        this.errorCode = errorCode;
+        this.httpStatus = httpStatus;
     }
 
-    public String getMessage() {
-        return message;
+    public BaseException(String message, ErrorCode errorCode, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+        this.httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
-    public int getStatusCode() {
-        return statusCode;
+    public BaseException(String message, ErrorCode errorCode, HttpStatus httpStatus, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+        this.httpStatus = httpStatus;
     }
 }

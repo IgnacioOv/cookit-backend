@@ -67,7 +67,7 @@ public class CursoServiceImpl implements CursoService {
     public CursoResponseDTO getCursoById(Integer idCurso) {
         Curso curso = cursoRepository.findById(idCurso)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.USUARIO_NOT_FOUND,
+                        ErrorCode.CURSO_NOT_FOUND,
                         "Curso no encontrado con ID: " + idCurso
                 ));
         return cursoMapper.toDTO(curso);

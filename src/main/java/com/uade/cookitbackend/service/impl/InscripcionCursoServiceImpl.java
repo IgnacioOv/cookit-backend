@@ -13,6 +13,7 @@ import com.uade.cookitbackend.service.InscripcionCursoService;
 import com.uade.cookitbackend.service.mappers.InscripcionCursoMapper;
 import com.uade.cookitbackend.service.impl.EmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InscripcionCursoServiceImpl implements InscripcionCursoService {
@@ -126,7 +128,13 @@ public class InscripcionCursoServiceImpl implements InscripcionCursoService {
             );
         } catch (Exception e) {
             // Log error pero no fallar la inscripción
-            System.err.println("Error al enviar email de confirmación: " + e.getMessage());
+            log.error("Error al enviar email de confirmación de inscripción para alumno {} (ID: {}), curso {} (ID: {}), transacción {}: {}", 
+                    alumno.getUsuario().getMail(), 
+                    alumno.getIdAlumno(),
+                    cronograma.getCurso().getDescripcion(),
+                    cronograma.getCurso().getIdCurso(),
+                    insc.getNumeroTransaccion(),
+                    e.getMessage(), e);
         }
 
         return inscripcionMapper.toDTO(insc);

@@ -13,6 +13,8 @@ import com.uade.cookitbackend.repository.db.UsuarioRepository;
 import com.uade.cookitbackend.service.UsuarioService;
 import com.uade.cookitbackend.service.mappers.UsuarioMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
@@ -347,10 +350,25 @@ public class UsuarioServiceImpl implements UsuarioService {
         List<String> sugerencias = new ArrayList<>();
         for (int i = 1; i <= 20 && sugerencias.size() < 3; i++) {
             String sugerido = base + i;
-            if (!usuarioRepository.existsByNickname(sugerido)) {
-                sugerencias.add(sugerido);
+            try {
+                if (!usuarioRepository.existsByNickname(sugerido)) {
+                    sugerencias.add(sugerido);
+                }
+            } catch (DataAccessException e) {
+                log.error("Error de base de datos al verificar nickname '{}': {}", sugerido, e.getMessage());
+                // Continuar con el siguiente nickname en caso de error
+                continue;
             }
         }
+        
+        // Si no se pudieron obtener sugerencias debido a errores de DB, generar fallback
+        if (sugerencias.isEmpty()) {
+            log.warn("No se pudieron obtener sugerencias de nicknames desde DB, generando fallback para base: {}", base);
+            for (int i = 1; i <= 3; i++) {
+                sugerencias.add(base + "_" + UUID.randomUUID().toString().substring(0, 4));
+            }
+        }
+        
         return sugerencias;
     }
 }

@@ -52,20 +52,7 @@ public class RecetaServiceImpl implements RecetaService {
     @Transactional
     public RecetaResponseDTO createReceta(CreateRecetaDTO createRecetaDTO) {
         Usuario usuario = usuarioService.getUsuarioById(createRecetaDTO.getIdUsuario());
-        if (usuario == null) {
-            throw new ResourceNotFoundException(
-                    ErrorCode.USUARIO_NOT_FOUND,
-                    "Usuario con ID " + createRecetaDTO.getIdUsuario() + " no encontrado."
-            );
-        }
-
         TipoReceta tipoReceta = tipoRecetaServiceImpl.getTipoRecetaById(createRecetaDTO.getIdTipo());
-        if (tipoReceta == null) {
-            throw new ResourceNotFoundException(
-                    ErrorCode.TIPO_RECETA_NOT_FOUND,
-                    "TipoReceta con ID " + createRecetaDTO.getIdTipo() + " no encontrado."
-            );
-        }
 
         Receta receta = recetaMapper.toEntity(createRecetaDTO);
         receta.setUsuario(usuario);
@@ -262,12 +249,6 @@ public class RecetaServiceImpl implements RecetaService {
         // Actualizar tipo de receta si se proporciona
         if (updateRecetaDTO.getIdTipo() != null) {
             TipoReceta tipoReceta = tipoRecetaServiceImpl.getTipoRecetaById(updateRecetaDTO.getIdTipo());
-            if (tipoReceta == null) {
-                throw new ResourceNotFoundException(
-                        ErrorCode.TIPO_RECETA_NOT_FOUND,
-                        "TipoReceta con ID " + updateRecetaDTO.getIdTipo() + " no encontrado."
-                );
-            }
             receta.setTipoReceta(tipoReceta);
         }
 
@@ -385,9 +366,6 @@ public class RecetaServiceImpl implements RecetaService {
 
         // Verificar que el usuario existe
         Usuario usuario = usuarioService.getUsuarioById(idUsuario);
-        if (usuario == null) {
-            throw new ResourceNotFoundException(ErrorCode.USUARIO_NOT_FOUND, "Usuario no encontrado");
-        }
 
         // Verificar que no esté ya en favoritos
         if (recetaFavoritaRepository.existsByUsuario_IdUsuarioAndReceta_IdReceta(idUsuario, idReceta)) {
@@ -488,19 +466,10 @@ public class RecetaServiceImpl implements RecetaService {
         approval.setApproved(true);
         recetaApprovalRepository.save(approval);
 
-        try {
-
-            Usuario usuarioToSendNot = usuarioService.getUsuarioById(approval.getReceta().getUsuario().getIdUsuario());
-            UserSession lastSesion = userSessionRepository.findLastUserSessionByUser(usuarioToSendNot).getFirst();
-
-            notificationRepository.sendNotification(lastSesion.getFmc(),
-                    "Receta aprobada",
-                    "La receta  ha sido aprobada por el administrador.",
-                    usuarioToSendNot.getIdUsuario());
-
-        } catch (Exception e) {
-            log.error("Error al enviar notificación de aprobación de receta: " + e.getMessage());
-        }
+        // Enviar notificación con reintentos
+        enviarNotificacionConReintentos(approval.getReceta().getUsuario().getIdUsuario(), 
+                "Receta aprobada", 
+                "La receta ha sido aprobada por el administrador.");
         
         // Crear response
         RecetaAprobacionResponseDTO response = new RecetaAprobacionResponseDTO();
@@ -512,5 +481,50 @@ public class RecetaServiceImpl implements RecetaService {
         response.setExitoso(true);
         
         return response;
+    }
+
+    private void enviarNotificacionConReintentos(Integer userId, String titulo, String mensaje) {
+        int maxReintentos = 3;
+        int reintento = 0;
+        
+        while (reintento < maxReintentos) {
+            try {
+                Usuario usuarioToSendNot = usuarioService.getUsuarioById(userId);
+                UserSession lastSesion = userSessionRepository.findLastUserSessionByUser(usuarioToSendNot).getFirst();
+
+                notificationRepository.sendNotification(lastSesion.getFmc(), titulo, mensaje, userId);
+                
+                log.info("Notificación enviada exitosamente al usuario {} en el intento {}", userId, reintento + 1);
+                return; // Éxito, salir del método
+                
+            } catch (ResourceNotFoundException e) {
+                log.error("Usuario {} no encontrado para envío de notificación: {}", userId, e.getMessage());
+                return; // No reintentar si el usuario no existe
+                
+            } catch (IndexOutOfBoundsException e) {
+                log.warn("Usuario {} no tiene sesiones activas para notificación: {}", userId, e.getMessage());
+                return; // No reintentar si no hay sesiones
+                
+            } catch (Exception e) {
+                reintento++;
+                log.warn("Error enviando notificación al usuario {} (intento {}/{}): {}", 
+                        userId, reintento, maxReintentos, e.getMessage());
+                
+                if (reintento >= maxReintentos) {
+                    log.error("Falló el envío de notificación al usuario {} después de {} intentos. Error final: {}", 
+                            userId, maxReintentos, e.getMessage());
+                    return;
+                }
+                
+                // Esperar antes del siguiente intento (backoff exponencial)
+                try {
+                    Thread.sleep(1000 * (long) Math.pow(2, reintento - 1)); // 1s, 2s, 4s
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Interrupted durante reintento de notificación");
+                    return;
+                }
+            }
+        }
     }
 }

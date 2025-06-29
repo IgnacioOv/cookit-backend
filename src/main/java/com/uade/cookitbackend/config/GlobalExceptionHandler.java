@@ -120,13 +120,61 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleUserNotEnabled(UserNotEnabledException ex, WebRequest request) {
         String path = request.getDescription(false).replace("uri=", "");
         ApiError apiError = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "Forbidden",
+                ex.getHttpStatus(),
                 ex.getErrorCode(),
                 ex.getMessage(),
                 path
         );
-        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(apiError, ex.getHttpStatus());
+    }
+
+    @ExceptionHandler(EmailSendException.class)
+    public ResponseEntity<ApiError> handleEmailSend(EmailSendException ex, WebRequest request) {
+        String path = request.getDescription(false).replace("uri=", "");
+        ApiError apiError = new ApiError(
+                ex.getHttpStatus(),
+                ex.getErrorCode(),
+                ex.getMessage(),
+                path
+        );
+        log.error("Error enviando email: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(apiError, ex.getHttpStatus());
+    }
+
+    @ExceptionHandler(EmailTemplateException.class)
+    public ResponseEntity<ApiError> handleEmailTemplate(EmailTemplateException ex, WebRequest request) {
+        String path = request.getDescription(false).replace("uri=", "");
+        ApiError apiError = new ApiError(
+                ex.getHttpStatus(),
+                ex.getErrorCode(),
+                ex.getMessage(),
+                path
+        );
+        log.error("Error procesando template de email: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(apiError, ex.getHttpStatus());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex, WebRequest request) {
+        String path = request.getDescription(false).replace("uri=", "");
+        ApiError apiError = new ApiError(
+                ex.getHttpStatus(),
+                ex.getErrorCode(),
+                ex.getMessage(),
+                path
+        );
+        return new ResponseEntity<>(apiError, ex.getHttpStatus());
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ApiError> handleValidationException(ValidationException ex, WebRequest request) {
+        String path = request.getDescription(false).replace("uri=", "");
+        ApiError apiError = new ApiError(
+                ex.getHttpStatus(),
+                ex.getErrorCode(),
+                ex.getMessage(),
+                path
+        );
+        return new ResponseEntity<>(apiError, ex.getHttpStatus());
     }
 }

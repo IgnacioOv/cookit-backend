@@ -1,5 +1,7 @@
 package com.uade.cookitbackend.service.impl;
 
+import com.uade.cookitbackend.exception.EmailSendException;
+import com.uade.cookitbackend.exception.EmailTemplateException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,16 +44,24 @@ public class VerificationService {
         String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6 dígitos
         LocalDateTime expiration = LocalDateTime.now().plusMinutes(RESET_EXPIRATION_MINUTES);
         resetCodes.put(mail, new CodeData(code, expiration));
-        emailService.sendHtmlMessage(
-                mail,
-                "Recuperación de contraseña",
-                "reset-password",
-                Map.of(
-                        "name", mail,
-                        "code", code,
-                        "minutes", RESET_EXPIRATION_MINUTES
-                )
-        );
+        
+        try {
+            emailService.sendHtmlMessage(
+                    mail,
+                    "Recuperación de contraseña",
+                    "reset-password",
+                    Map.of(
+                            "name", mail,
+                            "code", code,
+                            "minutes", RESET_EXPIRATION_MINUTES
+                    )
+            );
+        } catch (EmailSendException | EmailTemplateException e) {
+            // Limpiar el código almacenado si falla el envío
+            resetCodes.remove(mail);
+            log.error("Error enviando email de recuperación de contraseña a {}: {}", mail, e.getMessage());
+            throw e;
+        }
         return code;
     }
 
@@ -60,17 +70,24 @@ public class VerificationService {
         LocalDateTime expiration = LocalDateTime.now().plusHours(VERIFICATION_EXPIRATION_HOURS);
         log.info("code:{} ",code);
         resetCodes.put(mail, new CodeData(code, expiration));
-        // Enviar email
-        emailService.sendHtmlMessage(
-                mail,
-                "Verificación de correo electrónico",
-                "verification",
-                Map.of(
-                        "name", mail,
-                        "code", code,
-                        "hours", VERIFICATION_EXPIRATION_HOURS
-                )
-        );
+        
+        try {
+            emailService.sendHtmlMessage(
+                    mail,
+                    "Verificación de correo electrónico",
+                    "verification",
+                    Map.of(
+                            "name", mail,
+                            "code", code,
+                            "hours", VERIFICATION_EXPIRATION_HOURS
+                    )
+            );
+        } catch (EmailSendException | EmailTemplateException e) {
+            // Limpiar el código almacenado si falla el envío
+            resetCodes.remove(mail);
+            log.error("Error enviando email de verificación a {}: {}", mail, e.getMessage());
+            throw e;
+        }
         return code;
     }
 
@@ -93,17 +110,23 @@ public class VerificationService {
         log.info("Registration code:{} for email:{} with nickname:{}", code, mail, nickname);
         resetCodes.put(mail, new CodeData(code, expiration, nickname));
         
-        // Enviar email de registro
-        emailService.sendHtmlMessage(
-                mail,
-                "Verificación de registro - CookIt",
-                "verification",
-                Map.of(
-                        "name", nickname,
-                        "code", code,
-                        "hours", VERIFICATION_EXPIRATION_HOURS
-                )
-        );
+        try {
+            emailService.sendHtmlMessage(
+                    mail,
+                    "Verificación de registro - CookIt",
+                    "verification",
+                    Map.of(
+                            "name", nickname,
+                            "code", code,
+                            "hours", VERIFICATION_EXPIRATION_HOURS
+                    )
+            );
+        } catch (EmailSendException | EmailTemplateException e) {
+            // Limpiar el código almacenado si falla el envío
+            resetCodes.remove(mail);
+            log.error("Error enviando email de registro a {}: {}", mail, e.getMessage());
+            throw e;
+        }
         return code;
     }
 
