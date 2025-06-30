@@ -1,5 +1,6 @@
 package com.uade.cookitbackend.controller;
 
+import com.uade.cookitbackend.dto.NotificacionResponseDTO;
 import com.uade.cookitbackend.entity.Notificacion;
 import com.uade.cookitbackend.service.NotificacionService;
 import com.uade.cookitbackend.config.JwtUtil;
@@ -61,11 +62,11 @@ public class NotificationController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Notificaciones obtenidas exitosamente",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = NotificationResponse.class))),
+                            schema = @Schema(implementation = NotificacionResponseDTO.class))),
             @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
     })
     @GetMapping
-    public List<Notificacion> getNotification(@RequestHeader("Authorization") String authHeader) {
+    public List<NotificacionResponseDTO> getNotification(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new UnauthorizedException(
                 ErrorCode.UNAUTHORIZED,
@@ -83,7 +84,7 @@ public class NotificationController {
             );
         }
         
-        return notificacionService.obtenerNotificacionesPorUsuario(usuarioId);
+        return notificacionService.obtenerNotificacionesDTOPorUsuario(usuarioId);
     }
 
     @Data
