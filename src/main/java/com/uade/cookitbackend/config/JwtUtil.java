@@ -25,13 +25,11 @@ public class JwtUtil {
 
     public String generateToken(Integer userId, String subject) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
                 .setSubject(subject)
                 .claim("userId", userId)
                 .setIssuedAt(now)
-                .setExpiration(expiry)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
