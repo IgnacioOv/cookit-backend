@@ -11,6 +11,6 @@ public interface CursoService {
     List<CursoResponseDTO> getCursosBySede(Integer idSede);
     CursoResponseDTO getCursoById(Integer idCurso);
     List<MisCursosResponseDTO> getCursosContratadosPorAlumno(Integer idAlumno);
-    AsistenciaRegistradaResponseDTO registrarAsistenciaQR(AsistenciaQRRequestDTO dto);
+    AsistenciaRegistradaResponseDTO registrarAsistenciaQR(AsistenciaQRRequestDTO dto, String aula);
     AsistenciaReportDTO getReporteAsistencia(Integer idAlumno, Integer idCronograma);
 }

@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -92,7 +94,10 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     @Transactional
-    public AsistenciaRegistradaResponseDTO registrarAsistenciaQR(AsistenciaQRRequestDTO dto) {
+    public AsistenciaRegistradaResponseDTO registrarAsistenciaQR(AsistenciaQRRequestDTO dto, String aula) {
+        if(!this.validarAulaExistente(aula)) {
+            throw new BadRequestException(ErrorCode.INVALID_AULA, "Aula no válida o no disponible");
+        }
         Alumno alumno = alumnoRepository.findById(dto.getIdAlumno())
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ALUMNO_NOT_FOUND, "Alumno no encontrado"));
         CronogramaCurso cronograma = cronogramaCursoRepository.findById(dto.getIdCronograma())
@@ -173,5 +178,46 @@ public class CursoServiceImpl implements CursoService {
         report.setEstado(estado);
         
         return report;
+    }
+
+    /**
+     * Valida si el ID de aula proporcionado existe en el sistema
+     * @param aulaId ID del aula a validar
+     * @return true si el aula existe, false si no
+     */
+    private boolean validarAulaExistente(String aulaId) {
+        if (aulaId == null || aulaId.trim().isEmpty()) {
+            return false;
+        }
+
+        return getAulasDisponibles().containsKey(aulaId);
+    }
+
+    /**
+     * Devuelve un mapa con las aulas disponibles en el sistema
+     * Key: ID del aula
+     * Value: Descripción/nombre del aula
+     * @return Map con las aulas disponibles
+     */
+    private Map<String, String> getAulasDisponibles() {
+        Map<String, String> aulas = new HashMap<>();
+
+        // Aulas de la sede central
+        aulas.put("SC-A101", "Aula 101 - Sede Central");
+        aulas.put("SC-A102", "Aula 102 - Sede Central");
+        aulas.put("SC-A103", "Aula 103 - Sede Central");
+        aulas.put("SC-A201", "Aula 201 - Sede Central");
+        aulas.put("SC-A202", "Aula 202 - Sede Central");
+
+        // Aulas de la sede norte
+        aulas.put("SN-A101", "Aula 101 - Sede Norte");
+        aulas.put("SN-A102", "Aula 102 - Sede Norte");
+        aulas.put("SN-A103", "Aula 103 - Sede Norte");
+
+        // Aulas de la sede sur
+        aulas.put("SS-A101", "Aula 101 - Sede Sur");
+        aulas.put("SS-A102", "Aula 102 - Sede Sur");
+
+        return aulas;
     }
 }

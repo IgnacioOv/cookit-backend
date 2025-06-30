@@ -325,9 +325,9 @@ public class CursoController {
     @PostMapping("/asistencia/qr")
     public ResponseEntity<AsistenciaRegistradaResponseDTO> registrarAsistenciaQR(
             @Parameter(description = "Datos del QR: código de sede, aula y alumno", required = true)
-            @Valid @RequestBody AsistenciaQRRequestDTO dto
+            @Valid @RequestBody AsistenciaQRRequestDTO dto, @RequestParam String aulaId
     ) {
-        AsistenciaRegistradaResponseDTO response = cursoService.registrarAsistenciaQR(dto);
+        AsistenciaRegistradaResponseDTO response = cursoService.registrarAsistenciaQR(dto,aulaId);
         return ResponseEntity.ok(response);
     }
 
