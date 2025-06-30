@@ -121,6 +121,15 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    public Usuario getUsuarioByNickname(String nickname) {
+        return usuarioRepository.findByNickname(nickname)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.USUARIO_NOT_FOUND,
+                        "Usuario no encontrado con nickname: " + nickname
+                ));
+    }
+
+    @Override
     @Transactional
     public Usuario updateUsuario(Usuario usuario) {
         return usuarioRepository.save(usuario);

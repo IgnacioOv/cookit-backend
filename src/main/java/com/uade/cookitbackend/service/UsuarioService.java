@@ -11,6 +11,7 @@ public interface UsuarioService {
     Usuario getUsuarioById(Integer id);
     Usuario login(String mail, String password); // Autenticación de usuario
     Usuario getUsuarioByMail(String mail);
+    Usuario getUsuarioByNickname(String nickname);
     Usuario updateUsuario(Usuario usuario);
     
     // Métodos para registro en dos etapas

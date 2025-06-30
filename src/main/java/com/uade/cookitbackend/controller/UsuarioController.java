@@ -477,4 +477,40 @@ public class UsuarioController {
         response.setTtl("86400"); // 1 día en segundos
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+        summary = "Obtener usuario por nickname",
+        description = """
+            Obtiene la información pública de un usuario específico mediante su nickname.
+            
+            **Características:**
+            - Endpoint público (no requiere autenticación)
+            - Devuelve información básica del perfil del usuario
+            - Útil para mostrar perfiles públicos de otros usuarios
+            
+            **Casos de uso:**
+            - Mostrar perfil de autor de una receta
+            - Buscar usuarios por nickname
+            - Mostrar información de usuario en comentarios
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Usuario encontrado exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserProfileResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado con el nickname especificado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class)))
+    })
+    @GetMapping(
+            path = "/nickname/{nickname}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<UserProfileResponseDTO> getUserByNickname(
+            @PathVariable String nickname
+    ) {
+        Usuario usuario = usuarioService.getUsuarioByNickname(nickname);
+        UserProfileResponseDTO response = usuarioMapper.toUserProfileResponseDTO(usuario);
+        return ResponseEntity.ok(response);
+    }
 }
