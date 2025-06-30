@@ -65,12 +65,14 @@ public class RecetaServiceImpl implements RecetaService {
                         iu.setObservaciones(dto.getObservaciones());
 
                         if (dto.getIdIngrediente() != null) {
-                            ingredienteRepository.findById(dto.getIdIngrediente())
-                                    .ifPresent(i -> iu.setIngrediente(i));
+                            Ingrediente ingrediente = ingredienteRepository.findById(dto.getIdIngrediente())
+                                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.INGREDIENTE_NOT_FOUND, "Ingrediente no encontrado con id: " + dto.getIdIngrediente()));
+                            iu.setIngrediente(ingrediente);
                         }
                         if (dto.getIdUnidad() != null) {
-                            unidadRepository.findById(dto.getIdUnidad())
-                                    .ifPresent(u -> iu.setUnidad(u));
+                            Unidad unidad = unidadRepository.findById(dto.getIdUnidad())
+                                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.UNIDAD_NOT_FOUND, "Unidad no encontrada con id: " + dto.getIdUnidad()));
+                            iu.setUnidad(unidad);
                         }
                         return iu;
                     })
@@ -278,12 +280,14 @@ public class RecetaServiceImpl implements RecetaService {
                         iu.setObservaciones(dto.getObservaciones());
 
                         if (dto.getIdIngrediente() != null) {
-                            ingredienteRepository.findById(dto.getIdIngrediente())
-                                    .ifPresent(iu::setIngrediente);
+                            Ingrediente ingrediente = ingredienteRepository.findById(dto.getIdIngrediente())
+                                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.INGREDIENTE_NOT_FOUND, "Ingrediente no encontrado con id: " + dto.getIdIngrediente()));
+                            iu.setIngrediente(ingrediente);
                         }
                         if (dto.getIdUnidad() != null) {
-                            unidadRepository.findById(dto.getIdUnidad())
-                                    .ifPresent(iu::setUnidad);
+                            Unidad unidad = unidadRepository.findById(dto.getIdUnidad())
+                                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.UNIDAD_NOT_FOUND, "Unidad no encontrada con id: " + dto.getIdUnidad()));
+                            iu.setUnidad(unidad);
                         }
                         return iu;
                     })

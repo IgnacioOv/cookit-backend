@@ -14,6 +14,7 @@ import java.util.List;
 @Mapper(componentModel = "spring", uses = {PasoMapper.class, IngredienteMapper.class})
 public interface RecetaMapper {
 
+    @Mapping(target = "idReceta", ignore = true)
     @Mapping(target = "usuario", ignore = true)
     @Mapping(target = "tipoReceta", ignore = true)
     @Mapping(target = "ingredientesUtilizados", ignore = true)
