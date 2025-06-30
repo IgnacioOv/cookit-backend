@@ -7,6 +7,9 @@ import lombok.Data;
 @Data
 @Schema(description = "DTO for user profile response")
 public class UserProfileResponseDTO {
+    @Schema(description = "User's unique identifier", example = "123")
+    private Integer idUsuario;
+
     @Schema(description = "User's email address", example = "user@example.com")
     private String mail;
 
