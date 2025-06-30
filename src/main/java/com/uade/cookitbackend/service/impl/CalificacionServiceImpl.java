@@ -2,25 +2,23 @@ package com.uade.cookitbackend.service.impl;
 
 import com.uade.cookitbackend.dto.CalificacionRequestDTO;
 import com.uade.cookitbackend.dto.CalificacionResponseDTO;
-import com.uade.cookitbackend.entity.Calificacion;
-import com.uade.cookitbackend.entity.CalificacionApproval;
-import com.uade.cookitbackend.entity.Receta;
-import com.uade.cookitbackend.entity.Usuario;
+import com.uade.cookitbackend.entity.*;
 import com.uade.cookitbackend.exception.DuplicateResourceException;
 import com.uade.cookitbackend.exception.ErrorCode;
 import com.uade.cookitbackend.exception.ResourceNotFoundException;
-import com.uade.cookitbackend.repository.db.CalificacionApprovalRepository;
-import com.uade.cookitbackend.repository.db.CalificacionRepository;
-import com.uade.cookitbackend.repository.db.RecetaRepository;
-import com.uade.cookitbackend.repository.db.UsuarioRepository;
+import com.uade.cookitbackend.repository.db.*;
+import com.uade.cookitbackend.repository.notification.NotificationRepository;
 import com.uade.cookitbackend.service.CalificacionService;
+import com.uade.cookitbackend.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CalificacionServiceImpl implements CalificacionService {
@@ -28,7 +26,10 @@ public class CalificacionServiceImpl implements CalificacionService {
     private final CalificacionRepository calificacionRepository;
     private final CalificacionApprovalRepository calificacionApprovalRepository;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
     private final RecetaRepository recetaRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserSessionRepository userSessionRepository;
 
     @Override
     @Transactional
@@ -120,6 +121,54 @@ public class CalificacionServiceImpl implements CalificacionService {
         
         approval.setApproved(true);
         calificacionApprovalRepository.save(approval);
+        this.enviarNotificacionConReintentos(approval.getCalificacion().getUsuario().getIdUsuario(),
+                "Calificación aprobada",
+                "Tu calificación ha sido aprobada y publicada en la receta: " + approval.getCalificacion().getReceta().getNombreReceta());
+    }
+
+    private void enviarNotificacionConReintentos(Integer userId, String titulo, String mensaje) {
+        int maxReintentos = 3;
+        int reintento = 0;
+
+        while (reintento < maxReintentos) {
+            try {
+                Usuario usuarioToSendNot = usuarioService.getUsuarioById(userId);
+                UserSession lastSesion = userSessionRepository.findLastUserSessionByUser(usuarioToSendNot).getFirst();
+
+                notificationRepository.sendNotification(lastSesion.getFmc(), titulo, mensaje, userId);
+
+                log.info("Notificación enviada exitosamente al usuario {} en el intento {}", userId, reintento + 1);
+                return; // Éxito, salir del método
+
+            } catch (ResourceNotFoundException e) {
+                log.error("Usuario {} no encontrado para envío de notificación: {}", userId, e.getMessage());
+                return; // No reintentar si el usuario no existe
+
+            } catch (IndexOutOfBoundsException e) {
+                log.warn("Usuario {} no tiene sesiones activas para notificación: {}", userId, e.getMessage());
+                return; // No reintentar si no hay sesiones
+
+            } catch (Exception e) {
+                reintento++;
+                log.warn("Error enviando notificación al usuario {} (intento {}/{}): {}",
+                        userId, reintento, maxReintentos, e.getMessage());
+
+                if (reintento >= maxReintentos) {
+                    log.error("Falló el envío de notificación al usuario {} después de {} intentos. Error final: {}",
+                            userId, maxReintentos, e.getMessage());
+                    return;
+                }
+
+                // Esperar antes del siguiente intento (backoff exponencial)
+                try {
+                    Thread.sleep(1000 * (long) Math.pow(2, reintento - 1)); // 1s, 2s, 4s
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Interrupted durante reintento de notificación");
+                    return;
+                }
+            }
+        }
     }
 
     private CalificacionResponseDTO mapToDTO(Calificacion calificacion) {
