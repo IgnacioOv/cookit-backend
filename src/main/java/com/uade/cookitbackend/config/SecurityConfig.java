@@ -48,6 +48,8 @@ public class SecurityConfig {
                                 "/api/public/**", // Endpoints públicos para visitantes
                                 "/api/recetas/**", // Todos los endpoints de recetas son públicos
                                 "/api/tipos-receta/**", // <-- Hacer públicos todos los endpoints de tipo-receta
+                                "/api/cursos/**", // Todos los endpoints de cursos son públicos
+                                "/api/sedes/**", // Todos los endpoints de sedes son públicos
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
