@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cursos")
@@ -133,6 +134,40 @@ public class CursoController {
             @PathVariable Integer idSede
     ) {
         return ResponseEntity.ok(cursoService.getCursosBySede(idSede));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Obtener cronogramas de un curso específico",
+        description = """
+            Obtiene todos los cronogramas (ediciones/horarios) disponibles para un curso específico.
+            
+            **Información incluida por cronograma:**
+            - ID del cronograma
+            - Sede donde se dicta
+            - Fechas de inicio y fin
+            - Vacantes disponibles
+            
+            **Casos de uso:**
+            - Ver todas las opciones de horarios para un curso
+            - Comparar fechas entre diferentes sedes
+            - Verificar disponibilidad de vacantes por cronograma
+            - Seleccionar el cronograma más conveniente antes de inscribirse
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de cronogramas del curso",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CronogramaCursoResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Curso no encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
+    })
+    @GetMapping("/{idCurso}/cronogramas")
+    public ResponseEntity<List<CronogramaCursoResponseDTO>> getCronogramasCurso(
+            @Parameter(description = "ID del curso para obtener sus cronogramas", example = "1")
+            @PathVariable Integer idCurso
+    ) {
+        return ResponseEntity.ok(cursoService.getCronogramasByCurso(idCurso));
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -289,10 +324,14 @@ public class CursoController {
         return ResponseEntity.ok(inscripcionCursoService.getInscripcionById(idInscripcion));
     }
 
+    @Deprecated
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
-        summary = "Registrar asistencia mediante código QR",
+        summary = "[DEPRECADO] Registrar asistencia mediante código QR",
+        deprecated = true,
         description = """
+            ⚠️ **ENDPOINT DEPRECADO**: Usar '/asistencia/qr-clase' en su lugar.
+            
             Registra la asistencia de un alumno a una clase mediante la lectura de códigos QR.
             
             **Proceso de registro:**
@@ -324,11 +363,54 @@ public class CursoController {
     })
     @PostMapping("/asistencia/qr")
     public ResponseEntity<AsistenciaRegistradaResponseDTO> registrarAsistenciaQR(
-            @Parameter(description = "Datos del QR: código de sede, aula y alumno", required = true)
-            @Valid @RequestBody AsistenciaQRRequestDTO dto, @RequestParam String aulaId
+            @Parameter(description = "⚠️ DEPRECADO: Usar AsistenciaQRClaseRequestDTO con '/qr-clase'", required = true)
+            @Valid @RequestBody AsistenciaQRRequestDTO dto, 
+            @Parameter(description = "ID del aula", required = true)
+            @RequestParam String aulaId
     ) {
         AsistenciaRegistradaResponseDTO response = cursoService.registrarAsistenciaQR(dto,aulaId);
         return ResponseEntity.ok(response);
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "✅ Registrar asistencia mediante QR simple de cronograma [RECOMENDADO]",
+        description = """
+            **ENDPOINT RECOMENDADO** - Reemplaza al endpoint '/qr' deprecado.
+            
+            Registra la asistencia de un alumno usando un QR simple que contiene solo el ID del cronograma.
+            
+            **REUTILIZA LA MISMA LÓGICA DEL ENDPOINT ORIGINAL:**
+            - QR simple con solo el ID del cronograma (ej: "8" o "QR_8")
+            - Validación de aula igual al endpoint /qr
+            - Mismas reglas de asistencia y duplicados
+            - Proceso simplificado y robusto
+            
+            **Proceso unificado:**
+            1. Valida aula (método compartido)
+            2. Parsea ID de cronograma del QR simple
+            3. Aplica mismas validaciones: alumno inscrito, sin duplicados
+            4. Registra asistencia con timestamp actual
+            
+            **Formato de QR simplificado:** Solo el ID del cronograma
+            - Ejemplos válidos: "8", "QR_8", "123"
+            - Más simple y menos propenso a errores
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Asistencia registrada exitosamente",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AsistenciaRegistradaResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "QR inválido, aula incorrecta o asistencia duplicada"),
+            @ApiResponse(responseCode = "404", description = "Alumno o cronograma no encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
+    })
+    @PostMapping("/asistencia/qr-clase")
+    public ResponseEntity<AsistenciaRegistradaResponseDTO> registrarAsistenciaQRClase(
+            @Parameter(description = "Datos del QR específico de clase", required = true)
+            @Valid @RequestBody AsistenciaQRClaseRequestDTO dto
+    ) {
+        return ResponseEntity.ok(cursoService.registrarAsistenciaQRClase(dto));
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -373,6 +455,140 @@ public class CursoController {
             @PathVariable Integer idCronograma
     ) {
         return ResponseEntity.ok(cursoService.getReporteAsistencia(idAlumno, idCronograma));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Ver clases del cronograma con mi asistencia",
+        description = """
+            Obtiene las clases/horarios de un cronograma específico junto con la información detallada de asistencia del alumno.
+            
+            **Información incluida:**
+            - Horarios de clase del cronograma (días y horas)
+            - Fechas específicas en las que el alumno asistió a cada horario
+            - Cantidad de asistencias por horario
+            - Resumen general de asistencia
+            
+            **Casos de uso:**
+            - Ver mi historial de asistencia detallado
+            - Verificar a qué clases asistí y cuáles perdí
+            - Planificar asistencia futura basado en horarios
+            - Control personal de progreso en el curso
+            
+            **Validaciones:**
+            - El alumno debe estar inscrito al cronograma
+            - El cronograma debe existir
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Clases del cronograma con información de asistencia",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ClaseConAsistenciaDTO.class))),
+            @ApiResponse(responseCode = "400", description = "El alumno no está inscrito en este cronograma"),
+            @ApiResponse(responseCode = "404", description = "Cronograma no encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
+    })
+    @GetMapping("/mis-clases/{idAlumno}/{idCronograma}")
+    public ResponseEntity<ClaseConAsistenciaDTO> getMisClasesConAsistencia(
+            @Parameter(description = "ID del alumno", example = "123")
+            @PathVariable Integer idAlumno,
+            @Parameter(description = "ID del cronograma", example = "456")
+            @PathVariable Integer idCronograma
+    ) {
+        return ResponseEntity.ok(cursoService.getClasesConAsistencia(idAlumno, idCronograma));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Ver clases estructuradas por secciones (formato mobile)",
+        description = """
+            Obtiene las clases de un cronograma organizadas por secciones, ideal para mostrar en mobile.
+            
+            **Estructura de respuesta:**
+            - Secciones por día de la semana (Introduction, Pasteles Avanzados, etc.)
+            - Clases individuales con duración, QR y estado de asistencia
+            - ID único para cada clase para generar QR
+            - Indicador visual de asistencia (asistió/no asistió)
+            - Resumen de progreso general
+            
+            **Casos de uso:**
+            - Pantalla principal de "My Courses" en mobile
+            - Vista estructurada de clases con progreso
+            - Generación de QR por clase individual
+            - Control visual de asistencia
+            
+            **Mapeo:**
+            - Secciones = Días de la semana con nombres descriptivos
+            - Clases = Horarios específicos del día
+            - QR = ID único por clase para asistencia
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Clases estructuradas por secciones",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ClasesEstructuradasDTO.class))),
+            @ApiResponse(responseCode = "400", description = "El alumno no está inscrito en este cronograma"),
+            @ApiResponse(responseCode = "404", description = "Cronograma no encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
+    })
+    @GetMapping("/clases-mobile/{idAlumno}/{idCronograma}")
+    public ResponseEntity<ClasesEstructuradasDTO> getClasesMobile(
+            @Parameter(description = "ID del alumno", example = "123")
+            @PathVariable Integer idAlumno,
+            @Parameter(description = "ID del cronograma", example = "456")
+            @PathVariable Integer idCronograma
+    ) {
+        return ResponseEntity.ok(cursoService.getClasesEstructuradas(idAlumno, idCronograma));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+        summary = "Ver todas las clases de un cronograma",
+        description = """
+            Obtiene todas las clases de un cronograma con estadísticas generales de asistencia.
+            
+            **Diferencias con clases-mobile:**
+            - No requiere ID de alumno específico
+            - Muestra estadísticas generales de asistencia por clase
+            - Información global del cronograma
+            - Ideal para profesores o administradores
+            
+            **Información incluida:**
+            - Todas las clases estructuradas por secciones
+            - Estadísticas de asistencia por clase (cuántos asistieron)
+            - QR individuales para cada clase
+            - Resumen general con promedios
+            - Clases con mayor/menor asistencia
+            
+            **Casos de uso:**
+            - Vista de profesor para ver todas las clases
+            - Dashboard administrativo
+            - Planificación de clases
+            - Análisis de asistencia general
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Todas las clases del cronograma con estadísticas",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ClasesGeneralesDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Cronograma no encontrado"),
+            @ApiResponse(responseCode = "401", description = "Token de acceso inválido o ausente")
+    })
+    @GetMapping("/clases-generales/{idCronograma}")
+    public ResponseEntity<ClasesGeneralesDTO> getClasesGenerales(
+            @Parameter(description = "ID del cronograma", example = "8")
+            @PathVariable Integer idCronograma
+    ) {
+        return ResponseEntity.ok(cursoService.getClasesGenerales(idCronograma));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Debug: Ver información detallada de un cronograma")
+    @GetMapping("/debug-cronograma/{idCronograma}")
+    public ResponseEntity<Map<String, Object>> debugCronograma(
+            @PathVariable Integer idCronograma
+    ) {
+        return ResponseEntity.ok(cursoService.debugCronograma(idCronograma));
     }
 
     @Operation(

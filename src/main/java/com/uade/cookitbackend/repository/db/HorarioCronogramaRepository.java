@@ -24,4 +24,6 @@ public interface HorarioCronogramaRepository extends JpaRepository<HorarioCronog
            "WHEN 'DOMINGO' THEN 7 " +
            "END, h.horaInicio")
     List<HorarioCronograma> findByIdCronogramaOrderedByWeekday(@Param("idCronograma") Integer idCronograma);
+
+    List<HorarioCronograma> findByIdCronograma(Integer idCronograma);
 }
