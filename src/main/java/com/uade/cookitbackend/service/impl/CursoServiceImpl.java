@@ -9,6 +9,8 @@ import com.uade.cookitbackend.repository.db.AlumnoRepository;
 import com.uade.cookitbackend.repository.db.AsistenciaCursoRepository;
 import com.uade.cookitbackend.repository.db.CronogramaCursoRepository;
 import com.uade.cookitbackend.repository.db.CursoRepository;
+import com.uade.cookitbackend.repository.db.InscripcionCursoRepository;
+import com.uade.cookitbackend.repository.db.HorarioCronogramaRepository;
 import com.uade.cookitbackend.service.CursoService;
 import com.uade.cookitbackend.service.mappers.CursoMapper;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.DayOfWeek;
+import java.time.format.TextStyle;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +37,8 @@ public class CursoServiceImpl implements CursoService {
     private final CronogramaCursoRepository cronogramaCursoRepository;
     private final AsistenciaCursoRepository asistenciaCursoRepository;
     private final AlumnoRepository alumnoRepository;
+    private final InscripcionCursoRepository inscripcionCursoRepository;
+    private final HorarioCronogramaRepository horarioCronogramaRepository;
     private final CursoMapper cursoMapper;
 
     @Override
@@ -98,31 +107,45 @@ public class CursoServiceImpl implements CursoService {
         if(!this.validarAulaExistente(aula)) {
             throw new BadRequestException(ErrorCode.INVALID_AULA, "Aula no válida o no disponible");
         }
+        
         Alumno alumno = alumnoRepository.findById(dto.getIdAlumno())
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ALUMNO_NOT_FOUND, "Alumno no encontrado"));
         CronogramaCurso cronograma = cronogramaCursoRepository.findById(dto.getIdCronograma())
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CRONOGRAMA_CURSO_NOT_FOUND, "Cronograma no encontrado"));
 
-        // Verificar que el alumno esté inscripto en el curso
-        boolean estaInscripto = asistenciaCursoRepository.existsByAlumno_IdAlumnoAndCronograma_IdCronograma(
+        // Verificar que el alumno esté inscripto en el curso usando InscripcionCursoRepository
+        boolean estaInscripto = inscripcionCursoRepository.existsByAlumno_IdAlumnoAndCronograma_IdCronograma(
                 dto.getIdAlumno(), dto.getIdCronograma());
         
         if (!estaInscripto) {
             throw new BadRequestException(ErrorCode.ALUMNO_NOT_REGISTERED, "El alumno no está inscripto en este curso");
         }
 
-        // Crear registro de asistencia (solo campos disponibles)
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDate hoy = ahora.toLocalDate();
+        
+        // Verificar que no haya asistencia duplicada para hoy
+        boolean yaMarcoAsistenciaHoy = asistenciaCursoRepository
+                .findByAlumno_IdAlumnoAndCronograma_IdCronograma(dto.getIdAlumno(), dto.getIdCronograma())
+                .stream()
+                .anyMatch(a -> a.getFecha().toLocalDate().equals(hoy));
+        
+        if (yaMarcoAsistenciaHoy) {
+            throw new BadRequestException(ErrorCode.DUPLICATE_ATTENDANCE, "Ya se registró asistencia para el día de hoy");
+        }
+
+        // Crear registro de asistencia con fecha y hora actual
         AsistenciaCurso asistencia = new AsistenciaCurso();
         asistencia.setAlumno(alumno);
         asistencia.setCronograma(cronograma);
-        asistencia.setFecha(LocalDate.now().atStartOfDay());
+        asistencia.setFecha(ahora);
         
         asistenciaCursoRepository.save(asistencia);
         
         // Crear response estructurado
         AsistenciaRegistradaResponseDTO response = new AsistenciaRegistradaResponseDTO();
         response.setMensaje("Asistencia registrada correctamente");
-        response.setFechaRegistro(LocalDate.now().atStartOfDay());
+        response.setFechaRegistro(ahora);
         response.setIdAlumno(dto.getIdAlumno());
         response.setIdCronograma(dto.getIdCronograma());
         response.setExitoso(true);
@@ -219,5 +242,61 @@ public class CursoServiceImpl implements CursoService {
         aulas.put("SS-A102", "Aula 102 - Sede Sur");
 
         return aulas;
+    }
+
+    /**
+     * Valida si la hora actual está dentro del horario de clase permitido (±15 minutos)
+     * @param idCronograma ID del cronograma del curso
+     * @param fechaHoraActual Fecha y hora actual
+     * @return true si está en horario válido, false si no
+     */
+    private boolean validarHorarioClase(Integer idCronograma, LocalDateTime fechaHoraActual) {
+        List<HorarioCronograma> horarios = horarioCronogramaRepository
+                .findByIdCronogramaOrderedByWeekday(idCronograma);
+        
+        if (horarios.isEmpty()) {
+            return false;
+        }
+        
+        DayOfWeek diaActual = fechaHoraActual.getDayOfWeek();
+        String diaEspanol = convertirDiaASemanaEspanol(diaActual);
+        LocalTime horaActual = fechaHoraActual.toLocalTime();
+        
+        // Buscar horario para el día actual
+        for (HorarioCronograma horario : horarios) {
+            if (horario.getDiaSemana().equalsIgnoreCase(diaEspanol)) {
+                LocalTime horaInicio = horario.getHoraInicio();
+                LocalTime horaFin = horario.getHoraFin();
+                
+                // Permitir ±15 minutos
+                LocalTime inicioPermitido = horaInicio.minusMinutes(15);
+                LocalTime finPermitido = horaFin.plusMinutes(15);
+                
+                if (horaActual.isAfter(inicioPermitido.minusNanos(1)) && 
+                    horaActual.isBefore(finPermitido.plusNanos(1))) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Convierte DayOfWeek a nombre en español
+     * @param dayOfWeek día de la semana
+     * @return nombre del día en español
+     */
+    private String convertirDiaASemanaEspanol(DayOfWeek dayOfWeek) {
+        switch (dayOfWeek) {
+            case MONDAY: return "LUNES";
+            case TUESDAY: return "MARTES";
+            case WEDNESDAY: return "MIERCOLES";
+            case THURSDAY: return "JUEVES";
+            case FRIDAY: return "VIERNES";
+            case SATURDAY: return "SABADO";
+            case SUNDAY: return "DOMINGO";
+            default: return "";
+        }
     }
 }
