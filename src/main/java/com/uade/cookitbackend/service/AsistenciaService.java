@@ -28,27 +28,28 @@ public class AsistenciaService {
     }
 
     public void registrarAsistencia(AsistenciaCurso asistencia) {
-        HorarioCronograma horario = obtenerHorarioCorrespondiente(asistencia);
-        if (horario != null) {
-
-            asistenciaRepository.save(asistencia);
-        } else {
-            throw new RuntimeException("La asistencia no corresponde a ningún horario programado");
-        }
+        // SIN VALIDACIÓN DE TIEMPO - Registrar asistencia directamente
+        asistenciaRepository.save(asistencia);
     }
 
     public HorarioCronograma obtenerHorarioCorrespondiente(AsistenciaCurso asistencia) {
+        // Usar locale español para días de semana
         String diaAsistencia = asistencia.getFecha().getDayOfWeek()
-                                         .getDisplayName(TextStyle.FULL, Locale.getDefault()).toUpperCase();
+                                         .getDisplayName(TextStyle.FULL, new Locale("es", "ES")).toUpperCase();
         LocalTime horaAsistencia = asistencia.getFecha().toLocalTime();
         List<HorarioCronograma> horarios = horarioRepository.findByIdCronograma(
                 asistencia.getCronograma().getIdCronograma());
+        
         for (HorarioCronograma horario : horarios) {
-            if (horario.getDiaSemana().equalsIgnoreCase(diaAsistencia) &&
-               (horaAsistencia.equals(horario.getHoraInicio()) ||
-                (horaAsistencia.isAfter(horario.getHoraInicio()) && horaAsistencia.isBefore(horario.getHoraFin())) ||
-                horaAsistencia.equals(horario.getHoraFin()))) {
-                return horario;
+            if (horario.getDiaSemana().equalsIgnoreCase(diaAsistencia)) {
+                // Permitir tolerancia de ±15 minutos
+                LocalTime inicioPermitido = horario.getHoraInicio().minusMinutes(15);
+                LocalTime finPermitido = horario.getHoraFin().plusMinutes(15);
+                
+                if (!horaAsistencia.isBefore(inicioPermitido) && 
+                    !horaAsistencia.isAfter(finPermitido)) {
+                    return horario;
+                }
             }
         }
         return null;

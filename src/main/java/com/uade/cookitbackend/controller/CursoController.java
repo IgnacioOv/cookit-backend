@@ -374,27 +374,36 @@ public class CursoController {
 
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
-        summary = "✅ Registrar asistencia mediante QR simple de cronograma [RECOMENDADO]",
+        summary = "✅ Registrar asistencia por número de clase [RECOMENDADO]",
         description = """
-            **ENDPOINT RECOMENDADO** - Reemplaza al endpoint '/qr' deprecado.
+            **ENDPOINT RECOMENDADO** - Registra asistencia usando número de clase como referencia.
             
-            Registra la asistencia de un alumno usando un QR simple que contiene solo el ID del cronograma.
+            **SIN VALIDACIÓN DE HORARIOS** - Registro flexible basado en progreso de clases.
             
-            **REUTILIZA LA MISMA LÓGICA DEL ENDPOINT ORIGINAL:**
-            - QR simple con solo el ID del cronograma (ej: "8" o "QR_8")
-            - Validación de aula igual al endpoint /qr
-            - Mismas reglas de asistencia y duplicados
-            - Proceso simplificado y robusto
+            **Lógica inteligente sin modificar BD:**
+            1. Valida que el número de clase esté dentro del rango (1 a total de horarios configurados)
+            2. Verifica que el alumno no haya completado ya todas las clases
+            3. Permite solo una asistencia por día para evitar spam
+            4. NO almacena el número de clase específico (solo cuenta progreso)
+            5. Registra asistencia con timestamp actual
             
-            **Proceso unificado:**
-            1. Valida aula (método compartido)
-            2. Parsea ID de cronograma del QR simple
-            3. Aplica mismas validaciones: alumno inscrito, sin duplicados
-            4. Registra asistencia con timestamp actual
+            **Validaciones aplicadas:**
+            - ✅ Alumno inscrito en el cronograma
+            - ✅ Aula válida 
+            - ✅ Número de clase válido (1 ≤ numeroClase ≤ total horarios)
+            - ✅ No más asistencias que clases disponibles
+            - ✅ Máximo una asistencia por día
             
-            **Formato de QR simplificado:** Solo el ID del cronograma
-            - Ejemplos válidos: "8", "QR_8", "123"
-            - Más simple y menos propenso a errores
+            **Campos requeridos:**
+            - `idAlumno`: ID del alumno
+            - `idQRClase`: ID del cronograma (ej: "8")  
+            - `numeroClase`: Número de clase a registrar (1, 2, 3...)
+            - `aulaId`: ID del aula donde se toma asistencia
+            
+            **Ejemplo de progreso:**
+            - Clase 1: Primera asistencia registrada
+            - Clase 2: Segunda asistencia (al día siguiente)
+            - Clase N: Hasta completar todas las clases del cronograma
             """
     )
     @ApiResponses(value = {
