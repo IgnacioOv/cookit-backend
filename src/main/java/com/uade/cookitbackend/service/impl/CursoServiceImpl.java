@@ -663,28 +663,62 @@ public class CursoServiceImpl implements CursoService {
         }
 
         LocalDateTime ahora = LocalDateTime.now();
-        LocalDate hoy = ahora.toLocalDate();
         
-        // Verificar que no haya asistencia duplicada para hoy
-        boolean yaMarcoAsistenciaHoy = asistenciaCursoRepository
-                .findByAlumno_IdAlumnoAndCronograma_IdCronograma(dto.getIdAlumno(), idCronograma)
-                .stream()
+        // Obtener horarios del cronograma para validar número de clase
+        List<HorarioCronograma> horarios = horarioCronogramaRepository
+                .findByIdCronogramaOrderedByWeekday(idCronograma);
+        
+        if (horarios.isEmpty()) {
+            throw new BadRequestException(ErrorCode.INVALID_SCHEDULE, 
+                "No hay horarios configurados para este cronograma");
+        }
+        
+        // Validar que el número de clase sea válido
+        if (dto.getNumeroClase() < 1 || dto.getNumeroClase() > horarios.size()) {
+            throw new BadRequestException(ErrorCode.INVALID_QR, 
+                "Número de clase inválido. Debe estar entre 1 y " + horarios.size());
+        }
+        
+        // Contar asistencias existentes del alumno
+        List<AsistenciaCurso> asistenciasExistentes = asistenciaCursoRepository
+                .findByAlumno_IdAlumnoAndCronograma_IdCronograma(dto.getIdAlumno(), idCronograma);
+        
+        // Verificar que no haya más asistencias que clases disponibles
+        if (asistenciasExistentes.size() >= horarios.size()) {
+            throw new BadRequestException(ErrorCode.DUPLICATE_ATTENDANCE, 
+                "Ya se registraron todas las asistencias disponibles para este cronograma");
+        }
+        
+        // Permitir solo una asistencia por día para evitar spam
+        LocalDate hoy = ahora.toLocalDate();
+        boolean yaMarcoAsistenciaHoy = asistenciasExistentes.stream()
                 .anyMatch(a -> a.getFecha().toLocalDate().equals(hoy));
         
         if (yaMarcoAsistenciaHoy) {
-            throw new BadRequestException(ErrorCode.DUPLICATE_ATTENDANCE, "Ya se registró asistencia para el día de hoy");
+            throw new BadRequestException(ErrorCode.DUPLICATE_ATTENDANCE, 
+                "Ya se registró asistencia para el día de hoy. Use número de clase " + (asistenciasExistentes.size() + 1) + " mañana.");
         }
 
-        // Crear registro de asistencia (mismo código que el original)
+        // **OPCIONAL: Validar horario de clase (±15 minutos)**
+        // Descomenta las siguientes líneas si quieres validar horario:
+        /*
+        if (!validarHorarioClase(idCronograma, ahora)) {
+            throw new BadRequestException(ErrorCode.INVALID_SCHEDULE, 
+                "No es horario de clase. Solo se permite tomar asistencia ±15 minutos del horario programado");
+        }
+        */
+
+        // Crear registro de asistencia (sin almacenar número de clase)
         AsistenciaCurso asistencia = new AsistenciaCurso();
         asistencia.setAlumno(alumno);
         asistencia.setCronograma(cronograma);
-        asistencia.setFecha(ahora);
+        asistencia.setFecha(ahora); // Fecha actual para registro
         asistenciaService.registrarAsistencia(asistencia);
         
         // Crear response
         AsistenciaRegistradaResponseDTO response = new AsistenciaRegistradaResponseDTO();
-        response.setMensaje("Asistencia registrada correctamente");
+        response.setMensaje("Asistencia registrada correctamente para la clase #" + dto.getNumeroClase() + 
+                          " (" + (asistenciasExistentes.size() + 1) + " de " + horarios.size() + " clases)");
         response.setFechaRegistro(ahora);
         response.setIdAlumno(dto.getIdAlumno());
         response.setIdCronograma(idCronograma);
