@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface InscripcionCursoRepository extends JpaRepository<InscripcionCurso, Integer> {
     List<InscripcionCurso> findByAlumno_IdAlumno(Integer idAlumno);
+    List<InscripcionCurso> findByCronograma_IdCronograma(Integer idCronograma);
     boolean existsByAlumno_IdAlumnoAndCronograma_IdCronograma(Integer idAlumno, Integer idCronograma);
 }
